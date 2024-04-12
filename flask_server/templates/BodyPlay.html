@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Body Movement Recognition</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+<body>
+    <h1>Body Movement Recognition</h1>
+    
+    <div id="myDiv" style="display: none;">
+        <img id="video_pose" src="" />
+    </div>
+    <button id="playback_button" onclick="togglePlayback()">연주 시작</button>
+
+    <script>
+        var myDiv = document.getElementById('myDiv');
+        var video = document.getElementById('video_pose');
+        var streaming = false;
+        video.src = "";
+
+        myDiv.addEventListener('click', function() {
+            myDiv.style.display = 'none';
+        });
+
+        function togglePlayback() {
+            if (!streaming) {
+                // Start streaming
+                myDiv.style.display = 'block';
+
+                // Change button text
+                document.getElementById("playback_button").innerText = "연주 종료";
+
+                // Start webcam stream
+                video.src = "{{ url_for('processed_video_pose') }}";
+            } else {
+                // Stop streaming
+                myDiv.style.display = 'none';
+
+                // Change button text
+                document.getElementById("playback_button").innerText = "연주 시작";
+
+                // Stop webcam stream
+                video.src = "";
+            }
+            streaming = !streaming;
+        }
+    </script>
+</body>
+</html>
