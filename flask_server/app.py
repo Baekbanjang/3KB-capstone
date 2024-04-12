@@ -15,6 +15,7 @@ pygame.init()
 gesture_code = None
 pose_code = None
 isStop = False
+instrument_code = '0'
 
 code = {
     '0':'c4', '1':'c4_shop', '2':'d4', '3':'d4_shop', '4':'e4',
@@ -27,29 +28,45 @@ mode = {
 }
 
 pose_sounds = {
-    0: pygame.mixer.Sound('88 piano keys/c4.ogg'),
-    1: pygame.mixer.Sound('88 piano keys/d4.ogg'),
-    2: pygame.mixer.Sound('88 piano keys/e4.ogg'),
-    3: pygame.mixer.Sound('88 piano keys/f4.ogg'),
-    4: pygame.mixer.Sound('88 piano keys/g4.ogg'),
-    5: pygame.mixer.Sound('88 piano keys/a4.ogg'),
-    6: pygame.mixer.Sound('88 piano keys/b4.ogg'),
+    0: pygame.mixer.Sound('instrument/piano/c4.ogg'),
+    1: pygame.mixer.Sound('instrument/piano/d4.ogg'),
+    2: pygame.mixer.Sound('instrument/piano/e4.ogg'),
+    3: pygame.mixer.Sound('instrument/piano/f4.ogg'),
+    4: pygame.mixer.Sound('instrument/piano/g4.ogg'),
+    5: pygame.mixer.Sound('instrument/piano/a4.ogg'),
+    6: pygame.mixer.Sound('instrument/piano/b4.ogg'),
 }
 
-sounds = {
-    0: pygame.mixer.Sound('88 piano keys/c4.ogg'),
-    1: pygame.mixer.Sound('88 piano keys/c4_shop.ogg'),
-    2: pygame.mixer.Sound('88 piano keys/d4.ogg'),
-    3: pygame.mixer.Sound('88 piano keys/d4_shop.ogg'),
-    4: pygame.mixer.Sound('88 piano keys/e4.ogg'),
-    5: pygame.mixer.Sound('88 piano keys/f4.ogg'),
-    6: pygame.mixer.Sound('88 piano keys/f4_shop.ogg'),
-    7: pygame.mixer.Sound('88 piano keys/g4.ogg'),
-    8: pygame.mixer.Sound('88 piano keys/g4_shop.ogg'),
-    9: pygame.mixer.Sound('88 piano keys/a4.ogg'),
-    10: pygame.mixer.Sound('88 piano keys/a4_shop.ogg'),
-    11: pygame.mixer.Sound('88 piano keys/b4.ogg'),
-    12: pygame.mixer.Sound('88 piano keys/c5.ogg')
+instrument = {
+    '0': "piano",
+    '1': "pipe"
+}
+
+pipe = {
+    0: pygame.mixer.Sound('instrument/pipe/c2.wav'),
+    2: pygame.mixer.Sound('instrument/pipe/d2.wav'),
+    4: pygame.mixer.Sound('instrument/pipe/e2.wav'),
+    5: pygame.mixer.Sound('instrument/pipe/f2.wav'),
+    7: pygame.mixer.Sound('instrument/pipe/g2.wav'),
+    9: pygame.mixer.Sound('instrument/pipe/a2.wav'),
+    11: pygame.mixer.Sound('instrument/pipe/b2.wav'),
+    12: pygame.mixer.Sound('instrument/pipe/c3.wav')
+}
+
+piano = {
+    0: pygame.mixer.Sound('instrument/piano/c4.ogg'),
+    1: pygame.mixer.Sound('instrument/piano/c4_shop.ogg'),
+    2: pygame.mixer.Sound('instrument/piano/d4.ogg'),
+    3: pygame.mixer.Sound('instrument/piano/d4_shop.ogg'),
+    4: pygame.mixer.Sound('instrument/piano/e4.ogg'),
+    5: pygame.mixer.Sound('instrument/piano/f4.ogg'),
+    6: pygame.mixer.Sound('instrument/piano/f4_shop.ogg'),
+    7: pygame.mixer.Sound('instrument/piano/g4.ogg'),
+    8: pygame.mixer.Sound('instrument/piano/g4_shop.ogg'),
+    9: pygame.mixer.Sound('instrument/piano/a4.ogg'),
+    10: pygame.mixer.Sound('instrument/piano/a4_shop.ogg'),
+    11: pygame.mixer.Sound('instrument/piano/b4.ogg'),
+    12: pygame.mixer.Sound('instrument/piano/c5.ogg')
 }
 
 def calculateAngle(landmark1, landmark2, landmark3):
@@ -194,6 +211,7 @@ def get_pose_set():
                 b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 def gesture_gen():
+    global instrument_code
     file_path = 'data/gesture/gesture_train.csv'
     if os.path.exists(file_path):
         os.remove(file_path)
@@ -219,7 +237,7 @@ def gesture_gen():
     else:
         file = np.empty((0, 16))
     angle = file[:,:-1].astype(np.float32)
-    label = file[:, -1].astype(np.float32)
+    label = file[:, -1].astype(np.float32)  
     knn = cv2.ml.KNearest_create()
     knn.train(angle, cv2.ml.ROW_SAMPLE, label)
 
@@ -273,11 +291,16 @@ def gesture_gen():
                 data = np.array([angle], dtype=np.float32)
                 ret, results, neighbours, dist = knn.findNearest(data, 3)
                 idx = int(results[0][0])
+                selected_instrument_name = instrument[instrument_code]
+                if selected_instrument_name == "piano":
+                    selected_instrument = piano
+                elif selected_instrument_name == "pipe":
+                    selected_instrument = pipe
                 if temp_idx != idx :
                     temp_idx = idx
                     pygame.mixer.stop()
-                    if idx in sounds:
-                        sound = sounds[idx]
+                    if idx in selected_instrument:
+                        sound = selected_instrument[idx]
                         sound.set_volume(0.3)
                         sound.play(-1)
                     elif idx == 13:
@@ -422,8 +445,13 @@ def process_gesture_data():
             return render_template('GetHandDataSet.html', message="파일을 삭제합니다.")
     return render_template('GetHandDataSet.html')
 
-@app.route('/HandGestures_play')
+@app.route('/HandGestures_play', methods=['GET', 'POST'])
 def hand_gestures_play():
+    global instrument_code
+    if request.method == 'POST':
+        if 'instrument_value' in request.form:
+            instrument_code = request.form['instrument_value']
+            return render_template('HandPlay.html', message="악기 변경")
     return render_template('HandPlay.html')
 
 @app.route('/BodyMovements_play')   

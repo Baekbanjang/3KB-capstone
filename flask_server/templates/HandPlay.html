@@ -14,6 +14,9 @@
     </div>
     <button id="playback_button" onclick="togglePlayback()">연주 시작</button>
 
+    <button class="InstrumentButton" value=0>피아노</button>
+    <button class="InstrumentButton" value=1>파이프</button>
+
     <script>
         var myDiv = document.getElementById('myDiv');
         var video = document.getElementById('video_gesture');
@@ -23,6 +26,25 @@
         myDiv.addEventListener('click', function() {
             myDiv.style.display = 'none';
         });
+
+        // Ajax를 사용하여 Flask로 데이터를 비동기적으로 전송하는 함수
+        $(document).ready(function() {
+            $('.InstrumentButton').click(function() {
+                var buttonValue = $(this).val();
+                console.log("버튼 값:", buttonValue);
+                $.ajax({
+                    url: "/HandGestures_play",
+                    type: "POST",
+                    data: {instrument_value: buttonValue},
+                    success: function(response) {
+                        console.log("성공:", response);
+                    },
+                    error: function(error) {
+                        console.log("오류:", error);
+                    }
+                });
+            });
+        })
 
         function togglePlayback() {
             if (!streaming) {
