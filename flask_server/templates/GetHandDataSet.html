@@ -7,6 +7,10 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 </head>
 <body>
+    <button class="PresetButton" value=1>1</button>
+    <button class="PresetButton" value=2>2</button>
+    <button class="PresetButton" value=3>3</button>
+    <button class="PresetButton" value=4>4</button>
     <table>
         <tr>
             <td>도</td>
@@ -24,6 +28,19 @@
         <tr>
             <td>레</td>
             <td>
+                <button class="LiveButton" value="1">녹화하기</button>
+                <button class="DeleteButton" value="1">삭제하기</button>
+            </td>
+            <td>
+                <div id="myDiv1" style="display: none;">
+                    <img id="video_gesture1" src="" />
+                    <button class="stopButton" value="True">녹화 중지하기</button>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td>미</td>
+            <td>
                 <button class="LiveButton" value="2">녹화하기</button>
                 <button class="DeleteButton" value="2">삭제하기</button>
             </td>
@@ -35,7 +52,20 @@
             </td>
         </tr>
         <tr>
-            <td>미</td>
+            <td>파</td>
+            <td>
+                <button class="LiveButton" value="3">녹화하기</button>
+                <button class="DeleteButton" value="3">삭제하기</button>
+            </td>
+            <td>
+                <div id="myDiv3" style="display: none;">
+                    <img id="video_gesture3" src="" />
+                    <button class="stopButton" value="True">녹화 중지하기</button>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td>솔</td>
             <td>
                 <button class="LiveButton" value="4">녹화하기</button>
                 <button class="DeleteButton" value="4">삭제하기</button>
@@ -48,7 +78,7 @@
             </td>
         </tr>
         <tr>
-            <td>파</td>
+            <td>라</td>
             <td>
                 <button class="LiveButton" value="5">녹화하기</button>
                 <button class="DeleteButton" value="5">삭제하기</button>
@@ -61,7 +91,20 @@
             </td>
         </tr>
         <tr>
-            <td>솔</td>
+            <td>시</td>
+            <td>
+                <button class="LiveButton" value="6">녹화하기</button>
+                <button class="DeleteButton" value="6">삭제하기</button>
+            </td>
+            <td>
+                <div id="myDiv6" style="display: none;">
+                    <img id="video_gesture6" src="" />
+                    <button class="stopButton" value="True">녹화 중지하기</button>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td>정지 신호</td>
             <td>
                 <button class="LiveButton" value="7">녹화하기</button>
                 <button class="DeleteButton" value="7">삭제하기</button>
@@ -73,37 +116,26 @@
                 </div>
             </td>
         </tr>
-        <tr>
-            <td>라</td>
-            <td>
-                <button class="LiveButton" value="9">녹화하기</button>
-                <button class="DeleteButton" value="9">삭제하기</button>
-            </td>
-            <td>
-                <div id="myDiv9" style="display: none;">
-                    <img id="video_gesture9" src="" />
-                    <button class="stopButton" value="True">녹화 중지하기</button>
-                </div>
-            </td>
-        </tr>
-        <tr>
-            <td>시</td>
-            <td>
-                <button class="LiveButton" value="11">녹화하기</button>
-                <button class="DeleteButton" value="11">삭제하기</button>
-            </td>
-            <td>
-                <div id="myDiv11" style="display: none;">
-                    <img id="video_gesture11" src="" />
-                    <button class="stopButton" value="True">녹화 중지하기</button>
-                </div>
-            </td>
-        </tr>
     </table>
 
     <script>
         // Ajax를 사용하여 Flask로 데이터를 비동기적으로 전송하는 함수
         $(document).ready(function() {
+            $('.PresetButton').click(function() {
+                var buttonValue = $(this).val();
+                console.log("버튼 값:", buttonValue);
+                $.ajax({
+                    url: "/HandGestures_play",
+                    type: "POST",
+                    data: {preset: buttonValue},
+                    success: function(response) {
+                        console.log("성공:", response);
+                    },
+                    error: function(error) {
+                        console.log("오류:", error);
+                    }
+                });
+            });
             $('.LiveButton').click(function() {
                 var buttonValue = $(this).val();
                 console.log("버튼 값:", buttonValue);

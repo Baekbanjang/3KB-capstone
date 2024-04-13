@@ -16,11 +16,12 @@ gesture_code = None
 pose_code = None
 isStop = False
 instrument_code = '0'
+gesture_preset = '1'
+pose_preset = '1'
 
 code = {
-    '0':'c4', '1':'c4_shop', '2':'d4', '3':'d4_shop', '4':'e4',
-    '5':'f4', '6':'f4_shop', '7':'g4', '8':'g4_shop', '9':'a4',
-    '10':'a4_shop', '11':'b4', '12':'c5', '13':'stop'
+    '0':'c4', '1':'d4', '2':'e4', '3':'f4', '4':'g4',
+    '5':'a4', '6':'b4', '7':'stop'
 }
 
 mode = {
@@ -44,29 +45,22 @@ instrument = {
 
 pipe = {
     0: pygame.mixer.Sound('instrument/pipe/c2.wav'),
-    2: pygame.mixer.Sound('instrument/pipe/d2.wav'),
-    4: pygame.mixer.Sound('instrument/pipe/e2.wav'),
-    5: pygame.mixer.Sound('instrument/pipe/f2.wav'),
-    7: pygame.mixer.Sound('instrument/pipe/g2.wav'),
-    9: pygame.mixer.Sound('instrument/pipe/a2.wav'),
-    11: pygame.mixer.Sound('instrument/pipe/b2.wav'),
-    12: pygame.mixer.Sound('instrument/pipe/c3.wav')
+    1: pygame.mixer.Sound('instrument/pipe/d2.wav'),
+    2: pygame.mixer.Sound('instrument/pipe/e2.wav'),
+    3: pygame.mixer.Sound('instrument/pipe/f2.wav'),
+    4: pygame.mixer.Sound('instrument/pipe/g2.wav'),
+    5: pygame.mixer.Sound('instrument/pipe/a2.wav'),
+    6: pygame.mixer.Sound('instrument/pipe/b2.wav'),
 }
 
 piano = {
     0: pygame.mixer.Sound('instrument/piano/c4.ogg'),
-    1: pygame.mixer.Sound('instrument/piano/c4_shop.ogg'),
-    2: pygame.mixer.Sound('instrument/piano/d4.ogg'),
-    3: pygame.mixer.Sound('instrument/piano/d4_shop.ogg'),
-    4: pygame.mixer.Sound('instrument/piano/e4.ogg'),
-    5: pygame.mixer.Sound('instrument/piano/f4.ogg'),
-    6: pygame.mixer.Sound('instrument/piano/f4_shop.ogg'),
-    7: pygame.mixer.Sound('instrument/piano/g4.ogg'),
-    8: pygame.mixer.Sound('instrument/piano/g4_shop.ogg'),
-    9: pygame.mixer.Sound('instrument/piano/a4.ogg'),
-    10: pygame.mixer.Sound('instrument/piano/a4_shop.ogg'),
-    11: pygame.mixer.Sound('instrument/piano/b4.ogg'),
-    12: pygame.mixer.Sound('instrument/piano/c5.ogg')
+    1: pygame.mixer.Sound('instrument/piano/d4.ogg'),
+    2: pygame.mixer.Sound('instrument/piano/e4.ogg'),
+    3: pygame.mixer.Sound('instrument/piano/f4.ogg'),
+    4: pygame.mixer.Sound('instrument/piano/g4.ogg'),
+    5: pygame.mixer.Sound('instrument/piano/a4.ogg'),
+    6: pygame.mixer.Sound('instrument/piano/b4.ogg')
 }
 
 def calculateAngle(landmark1, landmark2, landmark3):
@@ -87,9 +81,9 @@ def calculateAngle(landmark1, landmark2, landmark3):
     return angle
 
 def get_gesture_set():
-    global gesture_code
-    if os.path.exists('data/gesture/gesture_train_'+ code[gesture_code] + '.csv') and os.path.getsize('data/gesture/gesture_train_'+ code[gesture_code] + '.csv') > 0:
-        file = np.genfromtxt('data/gesture/gesture_train_'+ code[gesture_code] + '.csv', delimiter=',')
+    global gesture_code, gesture_preset
+    if os.path.exists('data/gesture/'+ gesture_preset +'/gesture_train_'+ code[gesture_code] + '.csv') and os.path.getsize('data/gesture/'+ gesture_preset +'/gesture_train_'+ code[gesture_code] + '.csv') > 0:
+        file = np.genfromtxt('data/gesture/'+ gesture_preset +'/gesture_train_'+ code[gesture_code] + '.csv', delimiter=',')
     else:
         file = np.empty((0, 16))
 
@@ -143,14 +137,14 @@ def get_gesture_set():
                 cv2.putText(img, f'Current Gesture: {code[gesture_code]}', (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
                 file = np.vstack((file, data.astype(float)))
         if(isStop) :
-            np.savetxt('data/gesture/gesture_train_' + code[gesture_code] + '.csv', file, delimiter=',')
+            np.savetxt('data/gesture/'+ gesture_preset +'/gesture_train_' + code[gesture_code] + '.csv', file, delimiter=',')
         ret, jpeg = cv2.imencode('.jpg', img)
         frame = jpeg.tobytes()
         yield (b'--frame\r\n'
                 b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
         
 def get_pose_set():
-    global pose_code
+    global pose_code, pose_preset
     if os.path.exists('data/pose/pose_angle_train_'+ code[gesture_code] + '.csv') and os.path.getsize('data/pose/pose_angle_train_'+ code[gesture_code] + '.csv') > 0:
         file = np.genfromtxt('data/pose/pose_angle_train_'+ code[gesture_code] + '.csv', delimiter=',')
     else:
@@ -211,14 +205,14 @@ def get_pose_set():
                 b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 def gesture_gen():
-    global instrument_code
-    file_path = 'data/gesture/gesture_train.csv'
+    global instrument_code, gesture_preset
+    file_path = 'data/gesture/'+ gesture_preset +'/gesture_train.csv'
     if os.path.exists(file_path):
         os.remove(file_path)
 
     #data 폴더에 있는 데이터셋들 취합
-    file_list = glob.glob('data/gesture/' + '*')
-    with open('data/gesture/gesture_train.csv', 'w') as f: #2-1.merge할 파일을 열고
+    file_list = glob.glob('data/gesture/'+ gesture_preset +'/' + '*')
+    with open('data/gesture/'+ gesture_preset +'/gesture_train.csv', 'w') as f: #2-1.merge할 파일을 열고
         for file in file_list:
             with open(file ,'r') as f2:
                 while True:
@@ -232,8 +226,8 @@ def gesture_gen():
             file_name = file.split('/')[-1]
 
     # Gesture recognition model
-    if os.path.exists('data/gesture/gesture_train.csv') and os.path.getsize('data/gesture/gesture_train.csv') > 0:
-        file = np.genfromtxt('data/gesture/gesture_train.csv', delimiter=',')
+    if os.path.exists('data/gesture/'+ gesture_preset +'/gesture_train.csv') and os.path.getsize('data/gesture/'+ gesture_preset +'/gesture_train.csv') > 0:
+        file = np.genfromtxt('data/gesture/'+ gesture_preset +'/gesture_train.csv', delimiter=',')
     else:
         file = np.empty((0, 16))
     angle = file[:,:-1].astype(np.float32)
@@ -313,14 +307,15 @@ def gesture_gen():
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 def pose_gen():
+    global pose_preset
     # 기존에 수집된 데이터셋 초기화
-    file_path = 'data/pose/pose_angle_train.csv'
+    file_path = 'data/pose/'+ pose_preset +'/pose_angle_train.csv'
     if os.path.exists(file_path):
         os.remove(file_path)
 
     # data 폴더에 있는 데이터셋들 취합
-    file_list = glob.glob('data/pose/' + '*')
-    with open('data/pose/pose_angle_train.csv', 'w') as f: # 취합할 파일을 열고
+    file_list = glob.glob('data/pose/'+ pose_preset +'/' + '*')
+    with open('data/pose/'+ pose_preset +'/pose_angle_train.csv', 'w') as f: # 취합할 파일을 열고
         for file in file_list:
             with open(file ,'r') as f2:
                 while True:
@@ -334,8 +329,8 @@ def pose_gen():
             file_name = file.split('\\')[-1]
 
     # 포즈 인식 모델 로드
-    if os.path.exists('data/pose/pose_angle_train.csv') and os.path.getsize('data/pose/pose_angle_train.csv') > 0:
-        file = np.genfromtxt('data/pose/pose_angle_train.csv', delimiter=',')
+    if os.path.exists('data/pose/'+ pose_preset +'/pose_angle_train.csv') and os.path.getsize('data/pose/'+ pose_preset +'/pose_angle_train.csv') > 0:
+        file = np.genfromtxt('data/pose/'+ pose_preset +'/pose_angle_train.csv', delimiter=',')
     else:
         file = np.empty((0, 9))
 
@@ -389,11 +384,16 @@ def pose_gen():
             # 포즈 인식 및 해당 포즈에 맞는 음악 재생
             ret, results, neighbours, dist = knn.findNearest(pose_array, 3)  # KNN을 사용하여 가장 가까운 포즈 인식
             idx = int(results[0][0])
+            selected_instrument_name = instrument[instrument_code]
+            if selected_instrument_name == "piano":
+                selected_instrument = piano
+            elif selected_instrument_name == "pipe":
+                selected_instrument = pipe
             if temp_idx != idx :
                 temp_idx = idx
                 pygame.mixer.stop()
-                if idx in pose_sounds:
-                    sound = pose_sounds[idx]
+                if idx in selected_instrument:
+                    sound = selected_instrument[idx]
                     sound.set_volume(0.3)
                     sound.play(-1)
                 elif idx == 13:
@@ -407,8 +407,11 @@ def pose_gen():
         
 @app.route('/Get_BodyMovements', methods=['GET', 'POST'])
 def process_body_data():
-    global pose_code, isStop
+    global pose_code, isStop, pose_preset
     if request.method == 'POST':
+        if 'preset' in request.form:
+            pose_preset = request.form['preset']
+            return render_template('GetHandDataSet.html', message="프리셋 변경")
         if 'button_value' in request.form:
             pose_code = request.form['button_value']
             session['button_value_received'] = True  # 세션에 상태 저장
@@ -419,7 +422,7 @@ def process_body_data():
             return render_template('GetBodyDataSet.html', message="녹화를 종료합니다.")
         if 'delete_button_value' in request.form:
             pose_code = request.form['delete_button_value']
-            file_path = 'data/pose/pose_angle_train_'+ code[pose_code] + '.csv'
+            file_path = 'data/pose/'+ pose_preset +'/pose_angle_train_'+ code[pose_code] + '.csv'
             if os.path.exists(file_path):
                 os.remove(file_path)
             return render_template('GetBodyDataSet.html', message="파일을 삭제합니다.")
@@ -427,8 +430,11 @@ def process_body_data():
 
 @app.route('/Get_HandGestures', methods=['GET', 'POST'])
 def process_gesture_data():
-    global gesture_code, isStop
+    global gesture_code, isStop, gesture_preset
     if request.method == 'POST':
+        if 'preset' in request.form:
+            gesture_preset = request.form['preset']
+            return render_template('GetHandDataSet.html', message="프리셋 변경")
         if 'button_value' in request.form:
             gesture_code = request.form['button_value']
             session['button_value_received'] = True  # 세션에 상태 저장
@@ -439,7 +445,7 @@ def process_gesture_data():
             return render_template('GetHandDataSet.html', message="녹화를 종료합니다.")
         if 'delete_button_value' in request.form:
             gesture_code = request.form['delete_button_value']
-            file_path = 'data/gesture/gesture_train_'+ code[gesture_code] + '.csv'
+            file_path = 'data/gesture/'+ gesture_preset +'/gesture_train_'+ code[gesture_code] + '.csv'
             if os.path.exists(file_path):
                 os.remove(file_path)
             return render_template('GetHandDataSet.html', message="파일을 삭제합니다.")
@@ -447,8 +453,11 @@ def process_gesture_data():
 
 @app.route('/HandGestures_play', methods=['GET', 'POST'])
 def hand_gestures_play():
-    global instrument_code
+    global instrument_code, gesture_preset
     if request.method == 'POST':
+        if 'preset' in request.form:
+            gesture_preset = request.form['preset']
+            return render_template('HandPlay.html', message="프리셋 변경")
         if 'instrument_value' in request.form:
             instrument_code = request.form['instrument_value']
             return render_template('HandPlay.html', message="악기 변경")
@@ -456,6 +465,14 @@ def hand_gestures_play():
 
 @app.route('/BodyMovements_play')   
 def body_movements_play():
+    global instrument_code, pose_preset
+    if request.method == 'POST':
+        if 'preset' in request.form:
+            pose_preset = request.form['preset']
+            return render_template('BodyPlay.html', message="프리셋 변경")
+        if 'instrument_value' in request.form:
+            instrument_code = request.form['instrument_value']
+            return render_template('BodyPlay.html', message="악기 변경")
     return render_template('BodyPlay.html')
 
 @app.route('/processed_video_gesture')
