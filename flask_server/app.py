@@ -7,35 +7,33 @@ import pygame
 import os
 import glob
 import math
+import pyaudio
+import wave
+import threading
+import datetime
 
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
+
+cap = cv2.VideoCapture(0)
+cap.set(cv2.CAP_PROP_FPS, 60)
 
 pygame.init()
 gesture_code = None
 pose_code = None
 isStop = False
-instrument_code = '0'
+isRecording = None
+instrument_code = None
 gesture_preset = '1'
 pose_preset = '1'
 
 code = {
-    '0':'c4', '1':'d4', '2':'e4', '3':'f4', '4':'g4',
-    '5':'a4', '6':'b4', '7':'stop'
+    '0':'c_low', '1':'d', '2':'e', '3':'f', '4':'g',
+    '5':'a', '6':'b', '7':'stop'
 }
 
 mode = {
     '0': 'gesture', '1': 'pose'
-}
-
-pose_sounds = {
-    0: pygame.mixer.Sound('instrument/piano/c4.ogg'),
-    1: pygame.mixer.Sound('instrument/piano/d4.ogg'),
-    2: pygame.mixer.Sound('instrument/piano/e4.ogg'),
-    3: pygame.mixer.Sound('instrument/piano/f4.ogg'),
-    4: pygame.mixer.Sound('instrument/piano/g4.ogg'),
-    5: pygame.mixer.Sound('instrument/piano/a4.ogg'),
-    6: pygame.mixer.Sound('instrument/piano/b4.ogg'),
 }
 
 instrument = {
@@ -43,25 +41,42 @@ instrument = {
     '1': "pipe"
 }
 
-pipe = {
-    0: pygame.mixer.Sound('instrument/pipe/c2.wav'),
-    1: pygame.mixer.Sound('instrument/pipe/d2.wav'),
-    2: pygame.mixer.Sound('instrument/pipe/e2.wav'),
-    3: pygame.mixer.Sound('instrument/pipe/f2.wav'),
-    4: pygame.mixer.Sound('instrument/pipe/g2.wav'),
-    5: pygame.mixer.Sound('instrument/pipe/a2.wav'),
-    6: pygame.mixer.Sound('instrument/pipe/b2.wav'),
-}
+sounds = {}
 
-piano = {
-    0: pygame.mixer.Sound('instrument/piano/c4.ogg'),
-    1: pygame.mixer.Sound('instrument/piano/d4.ogg'),
-    2: pygame.mixer.Sound('instrument/piano/e4.ogg'),
-    3: pygame.mixer.Sound('instrument/piano/f4.ogg'),
-    4: pygame.mixer.Sound('instrument/piano/g4.ogg'),
-    5: pygame.mixer.Sound('instrument/piano/a4.ogg'),
-    6: pygame.mixer.Sound('instrument/piano/b4.ogg')
-}
+# 데이터셋 디렉토리 생성
+data_directory = "data"
+if not os.path.exists(data_directory):
+    os.makedirs(data_directory)
+
+# 데이터셋 디렉토리 생성
+instrument_directory = "instrument"
+if not os.path.exists(instrument_directory):
+    os.makedirs(instrument_directory)
+
+
+# 저장할 디렉토리 생성
+output_directory = "recordings"
+if not os.path.exists(output_directory):
+    os.makedirs(output_directory)
+
+# 현재 날짜 및 시간을 포맷에 맞게 가져오기
+current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+# 비디오 코덱 설정 및 비디오 녹화 객체 생성
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
+out = cv2.VideoWriter(f"{output_directory}/output_{current_time}.avi", fourcc, 30.0, (640, 480))
+
+def update_sounds():
+    global instrument_code, sounds
+    sounds = {
+        0: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/c_low.ogg'),
+        1: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/d.ogg'),
+        2: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/e.ogg'),
+        3: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/f.ogg'),
+        4: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/g.ogg'),
+        5: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/a.ogg'),
+        6: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/b.ogg')
+    }
 
 def calculateAngle(landmark1, landmark2, landmark3):
     # Get the required landmarks coordinates.
@@ -95,8 +110,6 @@ def get_gesture_set():
         max_num_hands=max_num_hands,
         min_detection_confidence=0.5,
         min_tracking_confidence=0.5)
-    cap = cv2.VideoCapture(0)
-    cap.set(cv2.CAP_PROP_FPS, 60)
 
     while cap.isOpened():
         ret, img = cap.read()
@@ -164,9 +177,6 @@ def get_pose_set():
     knn=cv2.ml.KNearest_create()
     knn.train(coordinate, cv2.ml.ROW_SAMPLE, label) # KNN 모델 훈련
 
-    cap = cv2.VideoCapture(0)
-    cap.set(cv2.CAP_PROP_FPS, 60)
-
     while cap.isOpened():
         ret, img = cap.read()
         if not ret:
@@ -205,7 +215,7 @@ def get_pose_set():
                 b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 def gesture_gen():
-    global instrument_code, gesture_preset
+    global gesture_preset, sounds, isRecording
     file_path = 'data/gesture/'+ gesture_preset +'/gesture_train.csv'
     if os.path.exists(file_path):
         os.remove(file_path)
@@ -246,8 +256,6 @@ def gesture_gen():
     min_tracking_confidence=0.5)
 
     temp_idx = None
-    cap = cv2.VideoCapture(0)
-    cap.set(cv2.CAP_PROP_FPS, 60)
 
     while cap.isOpened():
         ret, img = cap.read()
@@ -285,29 +293,29 @@ def gesture_gen():
                 data = np.array([angle], dtype=np.float32)
                 ret, results, neighbours, dist = knn.findNearest(data, 3)
                 idx = int(results[0][0])
-                selected_instrument_name = instrument[instrument_code]
-                if selected_instrument_name == "piano":
-                    selected_instrument = piano
-                elif selected_instrument_name == "pipe":
-                    selected_instrument = pipe
                 if temp_idx != idx :
                     temp_idx = idx
                     pygame.mixer.stop()
-                    if idx in selected_instrument:
-                        sound = selected_instrument[idx]
+                    if idx in sounds:
+                        sound = sounds[idx]
                         sound.set_volume(0.3)
-                        sound.play(-1)
+                        sound.play()
                     elif idx == 13:
                         if pygame.mixer.music.get_busy():
                             pygame.mixer.music.stop()
                 mp_drawing.draw_landmarks(img,res,mp_hands.HAND_CONNECTIONS)
+        if((isRecording == True) and (isRecording != None)) :
+            out.write(img)
+        elif((isRecording == False) and (isRecording != None)) :
+            out.release()
+            isRecording = None
         ret, jpeg = cv2.imencode('.jpg', img)
         frame = jpeg.tobytes()
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 def pose_gen():
-    global pose_preset
+    global pose_preset, sounds
     # 기존에 수집된 데이터셋 초기화
     file_path = 'data/pose/'+ pose_preset +'/pose_angle_train.csv'
     if os.path.exists(file_path):
@@ -350,9 +358,6 @@ def pose_gen():
     min_tracking_confidence=0.5) # 최소 추적 신뢰값 , 기본 0.5
 
     temp_idx = None
-    cap = cv2.VideoCapture(0)
-    cap.set(cv2.CAP_PROP_FPS, 60)
-
     while cap.isOpened():
         ret, img=cap.read()
         if not ret:
@@ -384,18 +389,13 @@ def pose_gen():
             # 포즈 인식 및 해당 포즈에 맞는 음악 재생
             ret, results, neighbours, dist = knn.findNearest(pose_array, 3)  # KNN을 사용하여 가장 가까운 포즈 인식
             idx = int(results[0][0])
-            selected_instrument_name = instrument[instrument_code]
-            if selected_instrument_name == "piano":
-                selected_instrument = piano
-            elif selected_instrument_name == "pipe":
-                selected_instrument = pipe
             if temp_idx != idx :
                 temp_idx = idx
                 pygame.mixer.stop()
-                if idx in selected_instrument:
-                    sound = selected_instrument[idx]
+                if idx in sounds:
+                    sound = sounds[idx]
                     sound.set_volume(0.3)
-                    sound.play(-1)
+                    sound.play()
                 elif idx == 13:
                     if pygame.mixer.music.get_busy():
                         pygame.mixer.music.stop()
@@ -415,11 +415,11 @@ def process_body_data():
         if 'button_value' in request.form:
             pose_code = request.form['button_value']
             session['button_value_received'] = True  # 세션에 상태 저장
-            return render_template('GetBodyDataSet.html', message="녹화를 시작합니다.")
+            return render_template('GetBodyDataSet.html', message="웹캠 작동을 시작합니다.")
         if 'stop_sign' in request.form and session.get('button_value_received'):
             isStop = request.form['stop_sign']
             session['button_value_received'] = False  # 상태 초기화
-            return render_template('GetBodyDataSet.html', message="녹화를 종료합니다.")
+            return render_template('GetBodyDataSet.html', message="웹캠 작동을 종료합니다.")
         if 'delete_button_value' in request.form:
             pose_code = request.form['delete_button_value']
             file_path = 'data/pose/'+ pose_preset +'/pose_angle_train_'+ code[pose_code] + '.csv'
@@ -438,11 +438,11 @@ def process_gesture_data():
         if 'button_value' in request.form:
             gesture_code = request.form['button_value']
             session['button_value_received'] = True  # 세션에 상태 저장
-            return render_template('GetHandDataSet.html', message="녹화를 시작합니다.")
+            return render_template('GetHandDataSet.html', message="웹캠 작동을 시작합니다.")
         if 'stop_sign' in request.form and session.get('button_value_received'):
             isStop = request.form['stop_sign']
             session['button_value_received'] = False  # 상태 초기화
-            return render_template('GetHandDataSet.html', message="녹화를 종료합니다.")
+            return render_template('GetHandDataSet.html', message="웹캠 작동을 종료합니다.")
         if 'delete_button_value' in request.form:
             gesture_code = request.form['delete_button_value']
             file_path = 'data/gesture/'+ gesture_preset +'/gesture_train_'+ code[gesture_code] + '.csv'
@@ -453,14 +453,23 @@ def process_gesture_data():
 
 @app.route('/HandGestures_play', methods=['GET', 'POST'])
 def hand_gestures_play():
-    global instrument_code, gesture_preset
+    global instrument_code, gesture_preset, isRecording
     if request.method == 'POST':
         if 'preset' in request.form:
             gesture_preset = request.form['preset']
             return render_template('HandPlay.html', message="프리셋 변경")
         if 'instrument_value' in request.form:
             instrument_code = request.form['instrument_value']
+            update_sounds()
             return render_template('HandPlay.html', message="악기 변경")
+        if 'isRecording' in request.form:
+            if(request.form['isRecording'] == 'True') :
+                isRecording = True
+            return render_template('HandPlay.html', message="녹화를 시작합니다.")
+        if 'isRecording' in request.form:
+            if(request.form['isRecording'] == 'False') :
+                isRecording = False
+            return render_template('HandPlay.html', message="녹화를 종료합니다.")
     return render_template('HandPlay.html')
 
 @app.route('/BodyMovements_play')   
@@ -472,6 +481,7 @@ def body_movements_play():
             return render_template('BodyPlay.html', message="프리셋 변경")
         if 'instrument_value' in request.form:
             instrument_code = request.form['instrument_value']
+            update_sounds()
             return render_template('BodyPlay.html', message="악기 변경")
     return render_template('BodyPlay.html')
 
