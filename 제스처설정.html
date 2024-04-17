@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Gesture Sound</title>
+        <style>
+            h1 {margin-top: 20px;}
+        </style>
+        <link rel="stylesheet" type="text/css" href="main.css">
+    </head>
+<body>
+    <div class="title">Gesture Sound</div>
+    <div class="menu-container">
+    <button onclick="myFunction()" class="menu-button">설정</button>
+        <div class="dropdown-content">
+            <a href="#" onclick="location.href='sound.html'">악기소리 설정</a>
+            <a href="#" onclick="location.href='gesture.html'">사용자 제스처 설정</a>
+            <a href="#" onclick="location.href='pose.html'">사용자 포즈 설정</a>
+        </div>
+    </div>
+    <script src="main.js"></script>
+    <style>
+        h1{text-align: center;}
+    </style>
+    <h1>사용자 제스처 설정<button class="help-button" onclick="toggleHelp()"> ?</button></h1>
+    <div class="help-text" id="helpText" style="display:none;" >
+        사용자 제스처 설정 페이지 입니다. 초기 설정은 관리자가 지정해놓은 기본값입니다.
+    </div>
+    <script>
+        function toggleHelp() {
+            var helpText = document.getElementById("helpText");
+            if (helpText.style.display === "none" || helpText.style.display === "") {
+                helpText.style.display = "block";
+            } else {
+                helpText.style.display = "none";
+            }
+        }
+    </script>
+
+    <div style="position: absolute; right: 20px; bottom: 20px;">
+        <button class="confirm-button">확인</button>
+    </div>
+</body>
+</html>
