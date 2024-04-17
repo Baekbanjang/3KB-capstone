@@ -23,7 +23,7 @@ gesture_code = None
 pose_code = None
 isStop = False
 isRecording = None
-instrument_code = None
+instrument_code = '0'
 gesture_preset = '1'
 pose_preset = '1'
 
@@ -41,7 +41,55 @@ instrument = {
     '1': "pipe"
 }
 
-sounds = {}
+sounds = {
+    0: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/c_low.ogg'),
+    1: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/d.ogg'),
+    2: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/e.ogg'),
+    3: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/f.ogg'),
+    4: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/g.ogg'),
+    5: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/a.ogg'),
+    6: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/b.ogg')
+}
+
+# 현재 날짜 및 시간을 포맷에 맞게 가져오기
+current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+out = None
+
+# 녹음 상태와 스레드를 관리하기 위한 변수
+frames = []
+recording_thread = None
+
+def start_recording():
+    global isRecording, frames
+    p = pyaudio.PyAudio()
+
+    # 녹음 설정
+    stream = p.open(format=pyaudio.paInt16,
+                    channels=2,
+                    rate=44100,
+                    input=True,
+                    frames_per_buffer=1024)
+
+    frames = []
+
+    while isRecording:
+        data = stream.read(1024)
+        frames.append(data)
+
+    # 녹음 종료
+    stream.stop_stream()
+    stream.close()
+    p.terminate()
+
+    # 파일로 저장
+    wf = wave.open(f"{output_directory}/output_{current_time}.wav", 'wb')
+    wf.setnchannels(2)
+    wf.setsampwidth(p.get_sample_size(pyaudio.paInt16))
+    wf.setframerate(44100)
+    wf.writeframes(b''.join(frames))
+    wf.close()
+    frames = []
 
 # 데이터셋 디렉토리 생성
 data_directory = "data"
@@ -58,13 +106,6 @@ if not os.path.exists(instrument_directory):
 output_directory = "recordings"
 if not os.path.exists(output_directory):
     os.makedirs(output_directory)
-
-# 현재 날짜 및 시간을 포맷에 맞게 가져오기
-current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-
-# 비디오 코덱 설정 및 비디오 녹화 객체 생성
-fourcc = cv2.VideoWriter_fourcc(*'XVID')
-out = cv2.VideoWriter(f"{output_directory}/output_{current_time}.avi", fourcc, 30.0, (640, 480))
 
 def update_sounds():
     global instrument_code, sounds
@@ -215,7 +256,7 @@ def get_pose_set():
                 b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 def gesture_gen():
-    global gesture_preset, sounds, isRecording
+    global gesture_preset, sounds, isRecording, out
     file_path = 'data/gesture/'+ gesture_preset +'/gesture_train.csv'
     if os.path.exists(file_path):
         os.remove(file_path)
@@ -306,9 +347,6 @@ def gesture_gen():
                 mp_drawing.draw_landmarks(img,res,mp_hands.HAND_CONNECTIONS)
         if((isRecording == True) and (isRecording != None)) :
             out.write(img)
-        elif((isRecording == False) and (isRecording != None)) :
-            out.release()
-            isRecording = None
         ret, jpeg = cv2.imencode('.jpg', img)
         frame = jpeg.tobytes()
         yield (b'--frame\r\n'
@@ -453,7 +491,7 @@ def process_gesture_data():
 
 @app.route('/HandGestures_play', methods=['GET', 'POST'])
 def hand_gestures_play():
-    global instrument_code, gesture_preset, isRecording
+    global instrument_code, gesture_preset, isRecording, out
     if request.method == 'POST':
         if 'preset' in request.form:
             gesture_preset = request.form['preset']
@@ -464,11 +502,18 @@ def hand_gestures_play():
             return render_template('HandPlay.html', message="악기 변경")
         if 'isRecording' in request.form:
             if(request.form['isRecording'] == 'True') :
+                fourcc = cv2.VideoWriter_fourcc(*'XVID')
+                out = cv2.VideoWriter(f"{output_directory}/output_{current_time}.avi", fourcc, 30.0, (640, 480))
                 isRecording = True
+                recording_thread = threading.Thread(target=start_recording)
+                recording_thread.start()
             return render_template('HandPlay.html', message="녹화를 시작합니다.")
         if 'isRecording' in request.form:
             if(request.form['isRecording'] == 'False') :
-                isRecording = False
+                isRecording = None
+                out.release()
+                out = None
+                recording_thread.join()
             return render_template('HandPlay.html', message="녹화를 종료합니다.")
     return render_template('HandPlay.html')
 
