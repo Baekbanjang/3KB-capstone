@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Gesture Sound</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="main.css">
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .video-heading {
+            margin-top: 10px;
+        }
+        .videos {
+            display: flex;
+            justify-content: space-between; /* 영상을 좌우로 나란히 배치합니다. */
+            width: 100%;
+            margin-top: 10px;
+            position: relative; /* 하위 요소를 상대적으로 배치하기 위해 추가 */
+        }
+        .video-container {
+            width: 36%; /* 각 영상 컨테이너의 너비를 조정합니다. */
+            position: relative;
+        }
+        video {
+            width: 100%;
+            height: auto;
+        }
+        .metronome-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center; /* 내용을 가운데 정렬 */
+        }
+        .child {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center; /* 내용을 가운데 정렬 */
+        }
+        .recording-buttons {
+            margin-top: 50px; /* 녹화 버튼과 메트로놈 사이의 간격 조절 */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="title">Gesture Sound</div>
+
+    <div class="menu-container">
+        <button onclick="myFunction()" class="menu-button">설정</button>
+        <button onclick="location.href='video.html'" class="menu-button">동영상 안내</button>
+        <div class="dropdown-content">
+            <a href="#" onclick="location.href='sound.html'">악기소리 설정</a>
+            <a href="#" onclick="location.href='gesture.html'">사용자 제스처 설정</a>
+            <a href="#" onclick="location.href='pose.html'">사용자 포즈 설정</a>
+            <a href="#" onclick="location.href='recordinglist.html'">녹화 영상 목록</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="videos">
+            <div class="video-container">
+                <div class="video-title">촬영 영상 1</div>
+                <video id="liveVideo1" autoplay></video>
+            </div>
+            <div class="metronome-container">
+                <div class="child">
+                    <h2>메트로놈</h2>
+                    <input type="range" min="40" max="240" value="60" onchange="setBpm(this.value)">
+                    <button onclick="decreaseBpm()">-</button>
+                    <span id="bpmDisplay">60</span> BPM
+                    <button onclick="increaseBpm()">+</button>
+                    <br>
+                    <button onclick="startMetronome()">시작</button>
+                    <button onclick="stopMetronome()">중지</button>
+                    <!-- 오디오 파일 미리 로드 -->
+                    <audio id="tickSound" src="/static/c4.ogg" preload="auto"></audio>
+
+                    <h2>영상 녹화</h2>
+                    <button onclick="startRecording()">녹화 시작</button>
+                    <button onclick="stopRecording()">녹화 중지</button>
+                    <div id="recordingIndicator" style="display: none;">녹화 중</div>
+                </div>
+            </div>
+            <div class="video-container">
+                <div class="video-title">촬영 영상 2</div>
+                <video id="liveVideo2" autoplay></video>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        //촬영 영상 비디오 스트림 가져오기
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function(stream) {
+                var liveVideo1 = document.getElementById('liveVideo1');
+                var liveVideo2 = document.getElementById('liveVideo2');
+                liveVideo1.srcObject = stream;
+                liveVideo2.srcObject = stream;
+            })
+            .catch(function(err) {
+                console.log('카메라 접근 권한을 얻을 수 없습니다.', err);
+            });
+    </script>
+    <script src="main.js"></script>
+
+    <script>
+        let bpm = 60; // 기본 박자를 60으로 설정
+        let intervalId;
+
+        function playTickSound() {
+            const sound = document.getElementById('tickSound');
+            sound.currentTime = 0; // 소리 파일을 시작 위치로 재설정
+            sound.play(); // 소리 재생
+        }
+
+        function startMetronome() {
+            if (intervalId) {
+                clearInterval(intervalId); // 이미 실행 중인 타이머가 있다면 중지
+            }
+            const ms = 60000 / bpm; // 분당 박자수를 밀리초 단위 간격으로 변환
+            intervalId = setInterval(playTickSound, ms);
+        }
+
+        function stopMetronome() {
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+        }
+        function startRecording() {
+        recordedChunks = [];
+        let liveVideo1 = document.getElementById('liveVideo1').captureStream();
+        let liveVideo2 = document.getElementById('liveVideo2').captureStream();
+        let mixedStream = new MediaStream([...liveVideo1.getTracks(), ...liveVideo2.getTracks()]);
+
+        mediaRecorder = new MediaRecorder(mixedStream);
+        mediaRecorder.ondataavailable = function(event) {
+            if (event.data.size > 0) {
+                recordedChunks.push(event.data);
+            }
+        };
+        mediaRecorder.start();
+        }
+        function stopRecording() {
+            mediaRecorder.stop();
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            document.body.appendChild(a);
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'recorded.webm';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function increaseBpm() {
+            setBpm(parseInt(document.getElementById('bpmDisplay').innerText) + 1);
+        }
+
+        function decreaseBpm() {
+            setBpm(parseInt(document.getElementById('bpmDisplay').innerText) - 1);
+        }
+        function setBpm(newBpm) {
+            bpm = newBpm;
+            document.getElementById('bpmDisplay').innerText = bpm;
+            startMetronome(); // BPM을 변경할 때 메트로놈을 재시작
+        }
+    </script>
+</body>
+</html>
