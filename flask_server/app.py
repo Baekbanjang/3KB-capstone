@@ -5,24 +5,24 @@ import mediapipe as mp
 import numpy as np
 import pygame
 import os
+os.environ["OPENCV_VIDEOIO_MSMF_ENABLE_HW_TRANSFORMS"]="0"
 import glob
 import math
 import pyaudio
 import wave
 import threading
 import datetime
-from moviepy.editor import VideoFileClip, AudioFileClip
+import subprocess
 
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 
-cap = cv2.VideoCapture(0)
-# FHD 해상도 설정
+cap = cv2.VideoCapture(0, cv2.CAP_MSMF)
+
+# 해상도 설정
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-cap.set(cv2.CAP_PROP_FPS, 60)
-
-out = None
+cap.set(cv2.CAP_PROP_FPS, 30.0)
 
 pygame.init()
 gesture_code = None
@@ -73,6 +73,11 @@ current_time = None
 is_recording_audio = False
 is_recording_video = False
 
+def update_current_time():
+    global current_time
+      # 현재 시간을 글로벌 변수인 current_time에 저장. 현재 시간을 "%Y-%m-%d_%H-%M-%S"의 형식으로 포맷.
+    current_time=datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
 # Recording audio function
 def record_audio():
     global is_recording_audio
@@ -81,6 +86,58 @@ def record_audio():
     while is_recording_audio:
         data = stream.read(CHUNK)
         frames.append(data)
+
+def start_recording():
+    global isRecording, frames
+
+    # 현재 날짜 및 시간을 포맷에 맞게 저장. 해당 시간은 녹음 및 녹화된 파일의 이름에 사용
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+    p = pyaudio.PyAudio()
+
+    # 녹음 설정: 체널 수, 샘플 레이트, 버퍼 크기 등을 설정
+    stream = p.open(format=pyaudio.paInt16,
+                    channels=2,
+                    rate=44100,
+                    input=True,
+                    input_device_index=1,
+                    frames_per_buffer=1024)
+
+    frames = [] # 오디오 프레임을 저장할 리스트
+
+    # 녹음이 진행되는 동안 오디오 데이터를 계속하여 frames 리스트에 추가
+    while isRecording:
+        data = stream.read(1024)
+        frames.append(data)
+
+    # 녹음 종료 과정
+    stream.stop_stream()
+    stream.close()
+    p.terminate()
+
+    # 오디오 파일로 저장
+    wf = wave.open(f"{output_directory}/output_{current_time}.wav", 'wb')
+    wf.setnchannels(2)
+    wf.setsampwidth(p.get_sample_size(pyaudio.paInt16))
+    wf.setframerate(44100)
+    wf.writeframes(b''.join(frames))
+    wf.close()
+    frames = [] # 오디오 프레임 데이터를 초기화
+
+# 오디오 파일과 비디오 파일을 병합하는 함수
+def merge_audio_video(video_file, audio_file, output_file): # 오디오, 비디오 파일 병합 함수
+    command = ['ffmpeg', '-y', '-i', video_file, '-i', audio_file, '-c:v', 'copy', '-c:a', 'aac', '-strict', 'experimental', output_file]
+    try:
+        # 외부 명령어 실행. 병합 과정에서 발생하는 표준 출력과 오류는 각각 stdout, stderr에 저장.
+        result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        # 병합 완료되면 원본 비디오 파일과 오디오 파일을 삭제
+        os.remove(video_file)
+        os.remove(audio_file)
+        print(f"Deleted original files: {video_file} and {audio_file}")
+    except subprocess.CalledProcessError as e:
+        print("Error Occurred:", e)
+        print("Error Output:", e.stderr.decode())
 
 # 데이터셋 디렉토리 생성
 data_directory = "data"
@@ -481,7 +538,7 @@ def process_gesture_data():
 
 @app.route('/HandGestures_play', methods=['GET', 'POST'])
 def hand_gestures_play():
-    global instrument_code, gesture_preset, isRecording, is_recording_audio, stream, frames, out, current_time, FILENAME
+    global instrument_code, gesture_preset, isRecording, out, recording_thread, current_time
     if request.method == 'POST':
         if 'preset' in request.form:
             gesture_preset = request.form['preset']
@@ -492,46 +549,20 @@ def hand_gestures_play():
             return render_template('HandPlay.html', message="악기 변경")
         if 'isRecording' in request.form:
             if(request.form['isRecording'] == 'True') :
-                fourcc = cv2.VideoWriter_fourcc(*'XVID')
-                current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-                FILENAME = 'output_'+current_time
+                update_current_time()
+                fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+                out = cv2.VideoWriter(f"{output_directory}/output_{current_time}.avi", fourcc, 30.0, (640, 480))
                 isRecording = True
-                out = cv2.VideoWriter(f"{output_directory}/{FILENAME}.avi", fourcc, 30.0, (640, 480))
-                # Start recording audio
-                frames = []
-                stream = audio.open(format=FORMAT, channels=CHANNELS,
-                        rate=RATE, input=True,
-                        frames_per_buffer=CHUNK)
-                is_recording_audio = True
-                threading.Thread(target=record_audio).start()
+                recording_thread = threading.Thread(target=start_recording)
+                recording_thread.start()
                 return render_template('HandPlay.html', message="녹화를 시작합니다.")
             elif(request.form['isRecording'] == 'False') :
-                out.release()
-                is_recording_audio = False
                 isRecording = None
+                out.release()
                 out = None
-                stream.stop_stream()
-                stream.close()
-
-                wf = wave.open(f"{output_directory}/{FILENAME}.wav", 'wb')
-                wf.setnchannels(CHANNELS)
-                wf.setsampwidth(audio.get_sample_size(FORMAT))
-                wf.setframerate(RATE)
-                wf.writeframes(b''.join(frames))
-                wf.close()
-
-                # Load audio and video clips
-                audio_clip = AudioFileClip(f"{output_directory}/{FILENAME}.wav")
-                video_clip = VideoFileClip(f"{output_directory}/{FILENAME}.avi")
-
-                # Concatenate audio and video clips
-                final_clip = video_clip.set_audio(audio_clip)
-
-                # Write final clip to a file
-                final_clip.write_videofile(f"{output_directory}/{FILENAME}.mp4", codec="libx264", audio_codec="aac")
-                os.remove(f"{output_directory}/{FILENAME}.wav")
-                os.remove(f"{output_directory}/{FILENAME}.avi")
-                return render_template('HandPlay.html', message="녹화를 종료합니다.")      
+                recording_thread.join()
+                merge_audio_video(f"{output_directory}/output_{current_time}.avi", f"{output_directory}/output_{current_time}.wav", f"{output_directory}/final_output_{current_time}.mp4")
+                return render_template('HandPlay.html', message="녹화를 종료합니다.")
     return render_template('HandPlay.html')
 
 @app.route('/BodyMovements_play')   
