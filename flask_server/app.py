@@ -13,16 +13,23 @@ import wave
 import threading
 import datetime
 import subprocess
+import time
 
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 
+# 비디오 녹화를 위한 설정. XVID 코덱을 사용
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
+
 cap = cv2.VideoCapture(0, cv2.CAP_MSMF)
 
+width, height = (640, 480)
+set_fps = 60
+
 # 해상도 설정
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-cap.set(cv2.CAP_PROP_FPS, 30.0)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+cap.set(cv2.CAP_PROP_FPS, set_fps)
 
 pygame.init()
 gesture_code = None
@@ -69,29 +76,13 @@ sounds = {
 # 현재 날짜 및 시간을 포맷에 맞게 가져오기
 current_time = None
 
-# Global variables to control recording
-is_recording_audio = False
-is_recording_video = False
-
 def update_current_time():
     global current_time
       # 현재 시간을 글로벌 변수인 current_time에 저장. 현재 시간을 "%Y-%m-%d_%H-%M-%S"의 형식으로 포맷.
     current_time=datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-# Recording audio function
 def record_audio():
-    global is_recording_audio
-    global frames
-
-    while is_recording_audio:
-        data = stream.read(CHUNK)
-        frames.append(data)
-
-def start_recording():
-    global isRecording, frames
-
-    # 현재 날짜 및 시간을 포맷에 맞게 저장. 해당 시간은 녹음 및 녹화된 파일의 이름에 사용
-    current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    global isRecording, frames, current_time
 
     p = pyaudio.PyAudio()
 
@@ -132,8 +123,8 @@ def merge_audio_video(video_file, audio_file, output_file): # 오디오, 비디�
         result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         # 병합 완료되면 원본 비디오 파일과 오디오 파일을 삭제
-        os.remove(video_file)
-        os.remove(audio_file)
+        #os.remove(video_file)
+        #os.remove(audio_file)
         print(f"Deleted original files: {video_file} and {audio_file}")
     except subprocess.CalledProcessError as e:
         print("Error Occurred:", e)
@@ -144,12 +135,12 @@ data_directory = "data"
 if not os.path.exists(data_directory):
     os.makedirs(data_directory)
 
-# 데이터셋 디렉토리 생성
+# 악기 디렉토리 생성
 instrument_directory = "instrument"
 if not os.path.exists(instrument_directory):
     os.makedirs(instrument_directory)
 
-# 저장할 디렉토리 생성
+# 녹화 디렉토리 생성
 output_directory = "recordings" 
 if not os.path.exists(output_directory):
     os.makedirs(output_directory)
@@ -303,7 +294,7 @@ def get_pose_set():
                 b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 def gesture_gen():
-    global gesture_preset, sounds, isRecording, out
+    global gesture_preset, sounds, isRecording, out, height, width, fps
     file_path = 'data/gesture/'+ gesture_preset +'/gesture_train.csv'
     if os.path.exists(file_path):
         os.remove(file_path)
@@ -335,6 +326,9 @@ def gesture_gen():
 
     max_num_hands = 1
 
+    frame_count = 0
+    start_time = time.time()  # 시작 시간 기록
+
     # MediaPipe hands model
     mp_hands = mp.solutions.hands
     mp_drawing = mp.solutions.drawing_utils
@@ -345,10 +339,17 @@ def gesture_gen():
 
     temp_idx = None
 
+    # Numpy 배열 생성
+    image = np.zeros((512, 512, 3), dtype=np.uint8)
+
     while cap.isOpened():
         ret, img = cap.read()
         if not ret:
             continue
+        
+        frame_count += 1
+        current_time = time.time() - start_time  # 현재 경과된 시간 계산
+        fps = round(frame_count / current_time)  # 현재 주사율 계산
 
         img = cv2.flip(img, 1)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -356,9 +357,20 @@ def gesture_gen():
         result = hands.process(img)
 
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-        
+
+        # Numpy 배열을 GPU 메모리로 복사
+        #gpu_image = cv2.cuda_GpuMat()
+        #gpu_image.upload(img)
+
+        # GPU에서 이미지 처리 (예시: 그레이스케일 변환)
+        #gpu_gray = cv2.cuda.cvtColor(gpu_image, cv2.COLOR_BGR2GRAY)
+
+        # GPU 메모리에서 CPU 메모리로 이미지 다운로드
+        #result_frame = gpu_gray.download()
+
         if result.multi_hand_landmarks is not None:
             for res in result.multi_hand_landmarks:
+                mp_drawing.draw_landmarks(img,res,mp_hands.HAND_CONNECTIONS)
                 joint = np.zeros((21, 3))
                 for j, lm in enumerate(res.landmark):
                     joint[j] = [lm.x, lm.y, lm.z]
@@ -391,9 +403,11 @@ def gesture_gen():
                     elif idx == 13:
                         if pygame.mixer.music.get_busy():
                             pygame.mixer.music.stop()
-                mp_drawing.draw_landmarks(img,res,mp_hands.HAND_CONNECTIONS)
         if isRecording:
             out.write(img)
+            #out.write(result_frame)
+        # 프레임에 주사율 표시
+        cv2.putText(img, f"FPS: {fps}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         ret, jpeg = cv2.imencode('.jpg', img)
         frame = jpeg.tobytes()
         yield (b'--frame\r\n'
@@ -484,7 +498,6 @@ def pose_gen():
                 elif idx == 13:
                     if pygame.mixer.music.get_busy():
                         pygame.mixer.music.stop()
-                mp_drawing.draw_landmarks(img, result.pose_landmarks, mp_pose.POSE_CONNECTIONS)
             ret, jpeg = cv2.imencode('.jpg', img)
             frame = jpeg.tobytes()
             yield (b'--frame\r\n'
@@ -538,7 +551,7 @@ def process_gesture_data():
 
 @app.route('/HandGestures_play', methods=['GET', 'POST'])
 def hand_gestures_play():
-    global instrument_code, gesture_preset, isRecording, out, recording_thread, current_time
+    global instrument_code, gesture_preset, isRecording, fourcc, out, audio_recording_thread, current_time, fps, width, height
     if request.method == 'POST':
         if 'preset' in request.form:
             gesture_preset = request.form['preset']
@@ -550,17 +563,15 @@ def hand_gestures_play():
         if 'isRecording' in request.form:
             if(request.form['isRecording'] == 'True') :
                 update_current_time()
-                fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-                out = cv2.VideoWriter(f"{output_directory}/output_{current_time}.avi", fourcc, 30.0, (640, 480))
+                out = cv2.VideoWriter(f"{output_directory}/output_{current_time}.avi", fourcc, fps, (width, height), cv2.CAP_FFMPEG)
                 isRecording = True
-                recording_thread = threading.Thread(target=start_recording)
-                recording_thread.start()
+                audio_recording_thread = threading.Thread(target=record_audio)
+                audio_recording_thread.start()
                 return render_template('HandPlay.html', message="녹화를 시작합니다.")
             elif(request.form['isRecording'] == 'False') :
                 isRecording = None
+                audio_recording_thread.join()
                 out.release()
-                out = None
-                recording_thread.join()
                 merge_audio_video(f"{output_directory}/output_{current_time}.avi", f"{output_directory}/output_{current_time}.wav", f"{output_directory}/final_output_{current_time}.mp4")
                 return render_template('HandPlay.html', message="녹화를 종료합니다.")
     return render_template('HandPlay.html')
@@ -604,4 +615,4 @@ def get_main():
     return render_template('main.html')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(threaded=True, debug=True)
