@@ -1,76 +1,200 @@
 <!DOCTYPE html>
 <html lang="ko">
-    <head>
-        <meta charset="UTF-8">
-        <title>Gesture Sound</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" type="text/css" href="main.css">
-        <style>
-            .container {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                margin-top: 20px;
-            }
-            .video-heading {
-                margin-top: 10px;
-            }
-            .videos {
-                display: flex;
-                justify-content: space-between; /* 영상을 좌우로 나란히 배치합니다. */
-                width: 100%;
-                margin-top: 10px;
-            }
-            .video-container {
-                width: 36%; /* 각 영상 컨테이너의 너비를 조정합니다. */
-                position: relative;
-            }
-            video {
-                width: 100%;
-                height: auto;
-            }
-        </style>
+<head>
+    <meta charset="UTF-8">
+    <title>Gesture Sound</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/static/css/main.css">
+    <script src="/static/js/main.js"></script>
+    <style>
         
-    </head>
+    </style>
+</head>
 
-    <body>
-        <div class="title">Gesture Sound</div>
-    
-        <div class="menu-container">
-            <button onclick="myFunction()" class="menu-button">설정</button>
-            <button onclick="location.href='video.html'" class="menu-button">동영상 안내</button>
-            <div class="dropdown-content">
-                <a href="#" onclick="location.href='sound.html'">악기소리 설정</a>
-                <a href="#" onclick="location.href='gesture.html'">사용자 제스처 설정</a>
-                <a href="#" onclick="location.href='pose.html'">사용자 포즈 설정</a>
+<body>
+    <div class="title">Gesture Sound</div>
+
+    <div class="menu-container">
+        <button onclick="myFunction()" class="menu-button">설정</button>
+        <button onclick="location.href='video.html'" class="menu-button">동영상 안내</button>
+        <div class="dropdown-content">
+            <a href="#" onclick="location.href='sound.html'">악기소리 설정</a>
+            <a href="#" onclick="location.href='GetHandDataSet.html'">사용자 제스처 설정</a>
+            <a href="#" onclick="location.href='GetPoseDataSet.html'">사용자 포즈 설정</a>
+            <a href="#" onclick="location.href='recordinglist.html'">녹화 영상 목록</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="video">
+            <div class="video-container">
+                <div id="myDiv" style="display: none;">
+                    <img id="video_gesture" src="" width="640" height="480"/>
+                </div>
+                <button id="playback_button" onclick="togglePlayback()">연주 시작</button>
+            
+                <button class="InstrumentButton" value=0>피아노</button>
+                <button class="InstrumentButton" value=1>피리</button>
+            
+                <button class="PresetButton" value=1>1</button>
+                <button class="PresetButton" value=2>2</button>
+                <button class="PresetButton" value=3>3</button>
+                <button class="PresetButton" value=4>4</button>
+            
+                <button class="RecordingTrueButton" value="True">녹화 시작</button>
+                <button class="RecordingFalseButton" value="False">녹화 정지</button>
+            </div>
+            <div class="metronome-container">
+                <div class="child">
+                    <h2>메트로놈</h2>
+                    <input type="range" min="40" max="240" value="60" onchange="setBpm(this.value)">
+                    <button onclick="decreaseBpm()">-</button>
+                    <span id="bpmDisplay">60</span> BPM
+                    <button onclick="increaseBpm()">+</button>
+                    <br>
+                    <button onclick="startMetronome()">시작</button>
+                    <button onclick="stopMetronome()">중지</button>
+                    <!-- 오디오 파일 미리 로드 -->
+                    <audio id="tickSound" src="/static/metronome_click.ogg" preload="auto"></audio>
+                </div>
             </div>
         </div>
+    </div>
 
-        <div class="container">
-            <div class="videos">
-                <div class="video-container">
-                    <div class="video-title">촬영 영상 1</div>
-                    <video id="liveVideo1" autoplay></video>
-                </div>
-                <div class="video-container">
-                    <div class="video-title">촬영 영상 2</div>
-                    <video id="liveVideo2" autoplay></video>
-                </div>
-            </div>
-        </div>
-        <script>
-            //촬영 영상 비디오 스트림 가져오기
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(function(stream) {
-                    var liveVideo1 = document.getElementById('liveVideo1');
-                    var liveVideo2 = document.getElementById('liveVideo2');
-                    liveVideo1.srcObject = stream;
-                    liveVideo2.srcObject = stream;
-                })
-                .catch(function(err) {
-                    console.log('카메라 접근 권한을 얻을 수 없습니다.', err);
+    <script>
+
+        var myDiv = document.getElementById('myDiv');
+        var video = document.getElementById('video_gesture');
+        var streaming = false;
+        video.src = "";
+
+        let bpm = 60; // 기본 박자를 60으로 설정
+        let intervalId;
+
+        function playTickSound() {
+            const sound = document.getElementById('tickSound');
+            sound.currentTime = 0; // 소리 파일을 시작 위치로 재설정
+            sound.play(); // 소리 재생
+        }
+
+        function startMetronome() {
+            if (intervalId) {
+                clearInterval(intervalId); // 이미 실행 중인 타이머가 있다면 중지
+            }
+            const ms = 60000 / bpm; // 분당 박자수를 밀리초 단위 간격으로 변환
+            intervalId = setInterval(playTickSound, ms);
+        }
+
+        function stopMetronome() {
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+        }
+
+        function increaseBpm() {
+            setBpm(parseInt(document.getElementById('bpmDisplay').innerText) + 1);
+        }
+
+        function decreaseBpm() {
+            setBpm(parseInt(document.getElementById('bpmDisplay').innerText) - 1);
+        }
+        function setBpm(newBpm) {
+            bpm = newBpm;
+            document.getElementById('bpmDisplay').innerText = bpm;
+            startMetronome(); // BPM을 변경할 때 메트로놈을 재시작
+        }
+
+        myDiv.addEventListener('click', function() {
+            myDiv.style.display = 'none';
+        });
+
+        // Ajax를 사용하여 Flask로 데이터를 비동기적으로 전송하는 함수
+        $(document).ready(function() {
+            $('.PresetButton').click(function() {
+                var buttonValue = $(this).val();
+                console.log("버튼 값:", buttonValue);
+                $.ajax({
+                    url: "/HandGestures_play",
+                    type: "POST",
+                    data: {preset: buttonValue},
+                    success: function(response) {
+                        console.log("성공:", response);
+                    },
+                    error: function(error) {
+                        console.log("오류:", error);
+                    }
                 });
-        </script>
-        <script src="main.js"></script>
-    </body>
+            });
+            $('.InstrumentButton').click(function() {
+                var buttonValue = $(this).val();
+                console.log("버튼 값:", buttonValue);
+                $.ajax({
+                    url: "/HandGestures_play",
+                    type: "POST",
+                    data: {instrument_value: buttonValue},
+                    success: function(response) {
+                        console.log("성공:", response);
+                    },
+                    error: function(error) {
+                        console.log("오류:", error);
+                    }
+                });
+            });
+            $('.RecordingTrueButton').click(function() {
+                var buttonValue = $(this).val();
+                $.ajax({
+                    url: "/HandGestures_play",
+                    type: "POST",
+                    data: {isRecording: buttonValue},
+                    success: function(response) {
+                        console.log("성공:", response);
+                    },
+                    error: function(error) {
+                        console.log("오류:", error);
+                    }
+                });
+            });
+            $('.RecordingFalseButton').click(function() {
+                var buttonValue = $(this).val();
+                $.ajax({
+                    url: "/HandGestures_play",
+                    type: "POST",
+                    data: {isRecording: buttonValue},
+                    success: function(response) {
+                        console.log("성공:", response);
+                    },
+                    error: function(error) {
+                        console.log("오류:", error);
+                    }
+                });
+            });
+        })
+
+        function togglePlayback() {
+            if (!streaming) {
+                // Start streaming
+                myDiv.style.display = 'block';
+
+                // Change button text
+                document.getElementById("playback_button").innerText = "연주 종료";
+
+                // Start webcam stream
+                video.src = "{{ url_for('processed_video_gesture') }}";
+               
+            
+            } else {
+                // Stop streaming
+                myDiv.style.display = 'none';
+
+                // Change button text
+                document.getElementById("playback_button").innerText = "연주 시작";
+
+                // Stop webcam stream
+                video.src = "";
+
+            }
+            streaming = !streaming;
+        }
+    </script>
+</body>
 </html>
