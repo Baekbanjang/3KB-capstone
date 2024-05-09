@@ -1,5 +1,7 @@
-from flask import Flask, render_template, Response, request, session
-
+from flask import Flask, render_template, Response, request, session, jsonify
+from pymongo import MongoClient
+from bson.objectid import ObjectId
+from moviepy.editor import VideoFileClip
 import cv2
 import mediapipe as mp
 import numpy as np
@@ -14,9 +16,16 @@ import threading
 import datetime
 import subprocess
 import time
+import pymongo
+import bson
+from gridfs import GridFS
 
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
+client = MongoClient("mongodb://localhost:27017/")
+db = client["record_videos"]
+fs = GridFS(db)
+fs_files_collection = db['fs.files']  # GridFS의 메타데이터 컬렉션
 
 # 비디오 녹화를 위한 설정. XVID 코덱을 사용
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
@@ -24,7 +33,7 @@ fourcc = cv2.VideoWriter_fourcc(*'XVID')
 cap = cv2.VideoCapture(0, cv2.CAP_MSMF)
 
 width, height = (640, 480)
-set_fps = 60
+set_fps = 30
 
 # 해상도 설정
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
@@ -39,7 +48,6 @@ isRecording = None
 instrument_code = '0'
 gesture_preset = '1'
 pose_preset = '1'
-FILENAME = ''
 
 CHUNK = 1024
 FORMAT = pyaudio.paInt16
@@ -48,6 +56,8 @@ RATE = 44100
 audio = pyaudio.PyAudio()
 stream = None
 frames = []
+
+play_time = None
 
 code = {
     '0':'c_low', '1':'d', '2':'e', '3':'f', '4':'g',
@@ -75,11 +85,24 @@ sounds = {
 
 # 현재 날짜 및 시간을 포맷에 맞게 가져오기
 current_time = None
+date_time = None
+
+def get_sorted_videos(sort_by, sort_direction):
+    sort_key = 'metadata.name'  # 기본적으로 이름을 기준으로 정렬합니다.
+    if sort_by in ['length', 'creationDate', 'instrument']:
+        sort_key = f"metadata.{sort_by}"
+    
+    sort_order = pymongo.DESCENDING if sort_direction == 'desc' else pymongo.ASCENDING
+    
+    videos = list(fs.find().sort(sort_key, sort_order))
+    
+    return videos
 
 def update_current_time():
-    global current_time
+    global current_time, date_time
       # 현재 시간을 글로벌 변수인 current_time에 저장. 현재 시간을 "%Y-%m-%d_%H-%M-%S"의 형식으로 포맷.
-    current_time=datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    date_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 def record_audio():
     global isRecording, frames, current_time
@@ -107,7 +130,7 @@ def record_audio():
     p.terminate()
 
     # 오디오 파일로 저장
-    wf = wave.open(f"{output_directory}/output_{current_time}.wav", 'wb')
+    wf = wave.open(f"output_{current_time}.wav", 'wb')
     wf.setnchannels(2)
     wf.setsampwidth(p.get_sample_size(pyaudio.paInt16))
     wf.setframerate(44100)
@@ -117,14 +140,26 @@ def record_audio():
 
 # 오디오 파일과 비디오 파일을 병합하는 함수
 def merge_audio_video(video_file, audio_file, output_file): # 오디오, 비디오 파일 병합 함수
-    command = ['ffmpeg', '-y', '-i', video_file, '-i', audio_file, '-c:v', 'copy', '-c:a', 'aac', '-strict', 'experimental', output_file]
+    global play_time, date_time
+    command = ['ffmpeg', '-y', '-i', video_file, '-i', audio_file, '-c:v', 'libx264', '-c:a', 'aac', '-strict', 'experimental', output_file]
     try:
         # 외부 명령어 실행. 병합 과정에서 발생하는 표준 출력과 오류는 각각 stdout, stderr에 저장.
         result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # 동영상 파일을 로드합니다.
+        video = VideoFileClip(output_file)
+        # 동영상의 재생시간을 구합니다 (초 단위).
+        duration = math.floor(video.duration)
+        # VideoFileClip 객체를 닫습니다.
+        video.close()
+
+        with open(output_file, "rb") as record_file:
+            # MongoDB에 저장
+            fs.put(record_file, metadata={"name": output_file, "creationDate": date_time, "instrument": instrument[instrument_code], "length": duration})
 
         # 병합 완료되면 원본 비디오 파일과 오디오 파일을 삭제
-        #os.remove(video_file)
-        #os.remove(audio_file)
+        os.remove(video_file)
+        os.remove(audio_file)
+        os.remove(output_file)
         print(f"Deleted original files: {video_file} and {audio_file}")
     except subprocess.CalledProcessError as e:
         print("Error Occurred:", e)
@@ -339,9 +374,6 @@ def gesture_gen():
 
     temp_idx = None
 
-    # Numpy 배열 생성
-    image = np.zeros((512, 512, 3), dtype=np.uint8)
-
     while cap.isOpened():
         ret, img = cap.read()
         if not ret:
@@ -357,16 +389,6 @@ def gesture_gen():
         result = hands.process(img)
 
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-
-        # Numpy 배열을 GPU 메모리로 복사
-        #gpu_image = cv2.cuda_GpuMat()
-        #gpu_image.upload(img)
-
-        # GPU에서 이미지 처리 (예시: 그레이스케일 변환)
-        #gpu_gray = cv2.cuda.cvtColor(gpu_image, cv2.COLOR_BGR2GRAY)
-
-        # GPU 메모리에서 CPU 메모리로 이미지 다운로드
-        #result_frame = gpu_gray.download()
 
         if result.multi_hand_landmarks is not None:
             for res in result.multi_hand_landmarks:
@@ -405,7 +427,6 @@ def gesture_gen():
                             pygame.mixer.music.stop()
         if isRecording:
             out.write(img)
-            #out.write(result_frame)
         # 프레임에 주사율 표시
         cv2.putText(img, f"FPS: {fps}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         ret, jpeg = cv2.imencode('.jpg', img)
@@ -551,7 +572,7 @@ def process_gesture_data():
 
 @app.route('/HandGestures_play', methods=['GET', 'POST'])
 def hand_gestures_play():
-    global instrument_code, gesture_preset, isRecording, fourcc, out, audio_recording_thread, current_time, fps, width, height
+    global instrument_code, gesture_preset, isRecording, fourcc, out, audio_recording_thread, current_time, fps, width, height, timer
     if request.method == 'POST':
         if 'preset' in request.form:
             gesture_preset = request.form['preset']
@@ -563,7 +584,7 @@ def hand_gestures_play():
         if 'isRecording' in request.form:
             if(request.form['isRecording'] == 'True') :
                 update_current_time()
-                out = cv2.VideoWriter(f"{output_directory}/output_{current_time}.avi", fourcc, fps, (width, height), cv2.CAP_FFMPEG)
+                out = cv2.VideoWriter(f"output_{current_time}.avi", fourcc, fps, (width, height))
                 isRecording = True
                 audio_recording_thread = threading.Thread(target=record_audio)
                 audio_recording_thread.start()
@@ -572,7 +593,7 @@ def hand_gestures_play():
                 isRecording = None
                 audio_recording_thread.join()
                 out.release()
-                merge_audio_video(f"{output_directory}/output_{current_time}.avi", f"{output_directory}/output_{current_time}.wav", f"{output_directory}/final_output_{current_time}.mp4")
+                merge_audio_video(f"output_{current_time}.avi", f"output_{current_time}.wav", f"final_output_{current_time}.mp4")
                 return render_template('HandPlay.html', message="녹화를 종료합니다.")
     return render_template('HandPlay.html')
 
@@ -588,6 +609,62 @@ def body_movements_play():
             update_sounds()
             return render_template('BodyPlay.html', message="악기 변경")
     return render_template('BodyPlay.html')
+
+@app.route('/Playlist')   
+def playlist():
+    # MongoDB에서 영상 리스트 가져오기
+    videolist = list(fs.find())  # GridFS에서 모든 파일을 조회
+    return render_template('Playlist.html', videos=videolist)
+
+@app.route('/Playlist/view/<video_id>', methods=['GET'])
+def view(video_id):
+    # MongoDB에서 해당 비디오 파일 가져오기
+    video = fs.find_one({'_id': bson.ObjectId(video_id)})
+    # 비디오 데이터를 스트리밍하는 응답 생성
+    def generate():
+        for chunk in video:
+            yield chunk
+    if video:
+        return Response(generate(), mimetype='video/mp4')
+    else:
+        return 'File not found', 404
+
+#@app.route('/Playlist/download/<video_id>')
+#def download(video_id):
+#    video = fs.get(ObjectId(video_id))
+#    return send_file(video, attachment_filename=video.filename, as_attachment=True)
+
+@app.route('/Playlist/rename/<video_id>', methods=['POST'])
+def rename(video_id):
+    new_name = request.form.get('new_name')
+    try:
+        # MongoDB에서 해당 비디오ID를 가진 문서의 metadata.name을 업데이트
+        result = fs_files_collection.update_one(
+            {'_id': ObjectId(video_id)},
+            {'$set': {'metadata.name': new_name}}
+        )
+        # 문서를 찾지 못한 경우
+        if result.matched_count == 0:
+            return jsonify({'success': False, 'message': 'File not found'}), 404         
+        # 성공적으로 업데이트
+        return jsonify({'success': True, 'message': 'Video name updated successfully.'}), 200
+    except Exception as e:
+        error_message = str(e) if str(e) else 'An error occurred while updating video name.'
+        return jsonify({'success': False, 'message': error_message}), 500
+
+@app.route('/Playlist/delete_selected', methods=['POST'])
+def delete_selected():
+    video_ids = request.form.getlist('video_ids')
+    for video_id in video_ids:
+        fs.delete(ObjectId(video_id))
+    return render_template('Playlist.html')
+
+@app.route('/Playlist/<sort_by>/<sort_direction>')
+def list_videos(sort_by, sort_direction):
+    videolist = get_sorted_videos(sort_by, sort_direction)
+
+    # HTML 템플릿에 비디오 목록 전달
+    return render_template('Playlist.html', videos=videolist)
 
 @app.route('/processed_video_gesture')
 def processed_video_gesture():

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Video List</title>
+    </head>
+    <body>
+        <h1>Video List</h1>
+        <div>
+            <a href="/Playlist/creationDate/asc">생성 날짜 ↑</a> |
+            <a href="/Playlist/creationDate/desc">생성 날짜 ↓</a> |
+            <a href="/Playlist/name/asc">이름 ↑</a> |
+            <a href="/Playlist/name/desc">이름 ↓</a> |
+            <a href="/Playlist/length/asc">길이 ↑</a> |
+            <a href="/Playlist/length/desc">길이 ↓</a> |
+            <a href="/Playlist/instrument/asc">악기 ↑</a> |
+            <a href="/Playlist/instrument/desc">악기 ↓</a>
+        </div>
+        <form id="deleteForm" action="/Playlist/delete_selected" method="post">
+            <table>
+                <thead>
+                    <tr>
+                        <th>이름</th>
+                        <th>생성 날짜</th>
+                        <th>길이</th>
+                        <th>악기</th>
+                        <th><button type="submit" onclick="return confirm('정말 삭제하시겠습니까?');">삭제</button></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for video in videos %}
+                    <tr>
+                        <td><input type="checkbox" name="video_ids" value="{{ video._id }}"></td> <!-- 체크박스 추가 -->
+                        <td><span class="editable" data-video-id="{{ video._id }}" data-field="name">{{ video.metadata['name'] }}</span></a></td>
+                        <td>{{ video.metadata['creationDate'] }}</td>
+                        <td>{{ video.metadata['length'] }}</td>
+                        <td>{{ video.metadata['instrument'] }}</td>
+                        <td>
+                                                    <!--{{ video['filename'] }} ({{ video['length'] }})
+                            다운로드 링크
+                            <a href="/Playlist/download/{{ video['_id'] }}">다운로드</a>
+                            이름 변경 폼
+                            <form action="/Playlist/rename/{{ video['_id'] }}" method="post" style="display:inline;">
+                                <input type="text" name="new_name" required placeholder="새 이름">
+                                <input type="submit" value="이름 변경">
+                            </form> -->
+                        </td>
+                        <td>
+                            <a href="{{ url_for('rename', video_id=video._id) }}">수정</a>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('view', video_id=video._id) }}">재생</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </form>
+    </body>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const makeEditable = function(span) {
+                span.addEventListener('click', function() {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = this.innerText;
+                    input.dataset.videoId = this.dataset.videoId;
+                    input.dataset.field = this.dataset.field;
+                    input.dataset.originalValue = this.innerText; // 원래 값 저장
+                    this.replaceWith(input);
+                    input.focus();
+    
+                    input.addEventListener('blur', function() {
+                        const newValue = this.value;
+                        const videoId = this.dataset.videoId;
+                        const field = this.dataset.field;
+    
+                        fetch(`/Playlist/rename/${videoId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: `new_name=${encodeURIComponent(newValue)}`
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                const newSpan = document.createElement('span');
+                                newSpan.innerText = newValue;
+                                newSpan.classList.add('editable');
+                                newSpan.dataset.videoId = videoId;
+                                newSpan.dataset.field = field;
+                                this.replaceWith(newSpan);
+                                makeEditable(newSpan); // 새로운 span에도 이벤트 리스너 추가
+                            } else {
+                                alert(data.message);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('An error occurred while updating video name.');
+                        });
+                    });
+                });
+            };
+    
+            const editableSpans = document.querySelectorAll('.editable');
+            editableSpans.forEach(makeEditable);
+        });
+    </script>
+</html>
