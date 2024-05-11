@@ -40,6 +40,9 @@ cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 cap.set(cv2.CAP_PROP_FPS, set_fps)
 
+sort_by = 'name'
+sort_direction = 'asc'
+
 pygame.init()
 gesture_code = None
 pose_code = None
@@ -612,9 +615,12 @@ def body_movements_play():
 
 @app.route('/Playlist')   
 def playlist():
+    global sort_by, sort_direction
+    sort_by = 'name'
+    sort_direction = 'asc'
     # MongoDB에서 영상 리스트 가져오기
     videolist = list(fs.find())  # GridFS에서 모든 파일을 조회
-    return render_template('Playlist.html', videos=videolist)
+    return render_template('Playlist.html', videos=videolist, sort_by=sort_by, sort_direction=sort_direction)
 
 @app.route('/Playlist/view/<video_id>', methods=['GET'])
 def view(video_id):
@@ -654,17 +660,18 @@ def rename(video_id):
 
 @app.route('/Playlist/delete_selected', methods=['POST'])
 def delete_selected():
+    global sort_by, sort_direction
     video_ids = request.form.getlist('video_ids')
     for video_id in video_ids:
         fs.delete(ObjectId(video_id))
-    return render_template('Playlist.html')
+    videolist = list(fs.find())  # GridFS에서 모든 파일을 조회
+    return render_template('Playlist.html', videos=videolist, sort_by=sort_by, sort_direction=sort_direction)
 
 @app.route('/Playlist/<sort_by>/<sort_direction>')
 def list_videos(sort_by, sort_direction):
     videolist = get_sorted_videos(sort_by, sort_direction)
-
     # HTML 템플릿에 비디오 목록 전달
-    return render_template('Playlist.html', videos=videolist)
+    return render_template('Playlist.html', videos=videolist, sort_by=sort_by, sort_direction=sort_direction)
 
 @app.route('/processed_video_gesture')
 def processed_video_gesture():
