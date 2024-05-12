@@ -85,7 +85,7 @@
             </td>
             <td>
                 <div id="myDiv5" style="display: none;">
-                    <img id="video_gesture5" src="" /> <br>
+                    <img id="video_pose5" src="" /> <br>
                     <button class="stopButton" value="True">녹화 중지하기</button>
                 </div>
             </td>
@@ -98,7 +98,7 @@
             </td>
             <td>
                 <div id="myDiv6" style="display: none;">
-                    <img id="video_gesture6" src="" /> <br>
+                    <img id="video_pose6" src="" /> <br>
                     <button class="stopButton" value="True">녹화 중지하기</button>
                 </div>
             </td>
@@ -111,7 +111,7 @@
             </td>
             <td>
                 <div id="myDiv7" style="display: none;">
-                    <img id="video_gesture7" src="" /> <br>
+                    <img id="video_pose7" src="" /> <br>
                     <button class="stopButton" value="True">녹화 중지하기</button>
                 </div>
             </td>
@@ -125,7 +125,7 @@
                 var buttonValue = $(this).val();
                 console.log("버튼 값:", buttonValue);
                 $.ajax({
-                    url: "/HandGestures_play",
+                    url: "/Get_BodyMovements",
                     type: "POST",
                     data: {preset: buttonValue},
                     success: function(response) {

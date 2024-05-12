@@ -275,10 +275,10 @@ def get_gesture_set():
         
 def get_pose_set():
     global pose_code, pose_preset
-    if os.path.exists('data/pose/pose_angle_train_'+ code[gesture_code] + '.csv') and os.path.getsize('data/pose/pose_angle_train_'+ code[gesture_code] + '.csv') > 0:
-        file = np.genfromtxt('data/pose/pose_angle_train_'+ code[gesture_code] + '.csv', delimiter=',')
+    if os.path.exists('data/pose/'+ pose_preset +'/pose_angle_train_'+ code[pose_code] + '.csv') and os.path.getsize('data/pose/'+ pose_preset +'/pose_angle_train_'+ code[pose_code] + '.csv') > 0:
+        file = np.genfromtxt('data/pose/'+ pose_preset +'/pose_angle_train_'+ code[pose_code] + '.csv', delimiter=',')
     else:
-        file = np.empty((0, 16))
+        file = np.empty((0, 9))
     # MediaPipe pose 모델 초기화
     mp_pose = mp.solutions.pose
     mp_drawing = mp.solutions.drawing_utils
@@ -289,19 +289,15 @@ def get_pose_set():
     min_detection_confidence=0.5, # 최소 탐지 신뢰값, 기본 0.5
     min_tracking_confidence=0.5) # 최소 추적 신뢰값 , 기본 0.5
 
-    coordinate=file[:,:-1].astype(np.float32) # 각도 데이터
-    label=file[:,-1].astype(np.float32) # 레이블 데이터
-    knn=cv2.ml.KNearest_create()
-    knn.train(coordinate, cv2.ml.ROW_SAMPLE, label) # KNN 모델 훈련
-
     while cap.isOpened():
         ret, img = cap.read()
         if not ret:
             continue
 
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         img = cv2.flip(img, 1)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+
         result = pose.process(img)
         if result.pose_landmarks is not None:
             mp_drawing.draw_landmarks(img, result.pose_landmarks, mp_pose.POSE_CONNECTIONS)  # 포즈 랜드마크 그리기
@@ -319,13 +315,13 @@ def get_pose_set():
             ]
 
             # 각도 데이터와 포즈 코드 번호를 합쳐서 저장
-            data = np.append(angles, code)
-            file = np.vstack((file, data))
+            data = np.append(angles, pose_code)
+            file = np.vstack((file, data.astype(float)))
             
             # 현재 촬영되는 포즈 정보를 화면에 표시
             cv2.putText(img, f'Current Pose: {code[pose_code]}', (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
         if(isStop) :
-            np.savetxt('data/pose/pose_angle_train_' + code[pose_code] + '.csv', file, delimiter=',')
+            np.savetxt('data/pose/'+ pose_preset +'/pose_angle_train_' + code[pose_code] + '.csv', file, delimiter=',')
         ret, jpeg = cv2.imencode('.jpg', img)
         frame = jpeg.tobytes()
         yield (b'--frame\r\n'
@@ -528,12 +524,12 @@ def pose_gen():
                 b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
         
 @app.route('/Get_BodyMovements', methods=['GET', 'POST'])
-def process_body_data():
+def process_pose_data():
     global pose_code, isStop, pose_preset
     if request.method == 'POST':
         if 'preset' in request.form:
             pose_preset = request.form['preset']
-            return render_template('GetHandDataSet.html', message="프리셋 변경")
+            return render_template('GetBodyDataSet.html', message="프리셋 변경")
         if 'button_value' in request.form:
             pose_code = request.form['button_value']
             session['button_value_received'] = True  # 세션에 상태 저장
@@ -575,7 +571,7 @@ def process_gesture_data():
 
 @app.route('/HandGestures_play', methods=['GET', 'POST'])
 def hand_gestures_play():
-    global instrument_code, gesture_preset, isRecording, fourcc, out, audio_recording_thread, current_time, fps, width, height, timer
+    global instrument_code, gesture_preset, isRecording, fourcc, out, audio_recording_thread, current_time, fps, width, height
     if request.method == 'POST':
         if 'preset' in request.form:
             gesture_preset = request.form['preset']
@@ -602,7 +598,7 @@ def hand_gestures_play():
 
 @app.route('/BodyMovements_play')   
 def body_movements_play():
-    global instrument_code, pose_preset
+    global instrument_code, pose_preset, isRecording, fourcc, out, audio_recording_thread, current_time, fps, width, height
     if request.method == 'POST':
         if 'preset' in request.form:
             pose_preset = request.form['preset']
@@ -611,6 +607,20 @@ def body_movements_play():
             instrument_code = request.form['instrument_value']
             update_sounds()
             return render_template('BodyPlay.html', message="악기 변경")
+        if 'isRecording' in request.form:
+            if(request.form['isRecording'] == 'True') :
+                update_current_time()
+                out = cv2.VideoWriter(f"output_{current_time}.avi", fourcc, fps, (width, height))
+                isRecording = True
+                audio_recording_thread = threading.Thread(target=record_audio)
+                audio_recording_thread.start()
+                return render_template('BodyPlay.html', message="녹화를 시작합니다.")
+            elif(request.form['isRecording'] == 'False') :
+                isRecording = None
+                audio_recording_thread.join()
+                out.release()
+                merge_audio_video(f"output_{current_time}.avi", f"output_{current_time}.wav", f"final_output_{current_time}.mp4")
+                return render_template('BodyPlay.html', message="녹화를 종료합니다.")
     return render_template('BodyPlay.html')
 
 @app.route('/Playlist')   
@@ -685,7 +695,6 @@ def processed_video_pose():
 
 @app.route('/get_video_gesture')
 def get_video_gesture():
-    global gesture_code
     return Response(get_gesture_set(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 

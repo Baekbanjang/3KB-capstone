@@ -125,7 +125,7 @@
                 var buttonValue = $(this).val();
                 console.log("버튼 값:", buttonValue);
                 $.ajax({
-                    url: "/HandGestures_play",
+                    url: "/Get_HandGestures",
                     type: "POST",
                     data: {preset: buttonValue},
                     success: function(response) {

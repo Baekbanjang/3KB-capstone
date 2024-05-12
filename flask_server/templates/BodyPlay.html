@@ -4,23 +4,89 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Body Movement Recognition</title>
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .video-heading {
+            margin-top: 10px;
+        }
+        .videos {
+            display: flex;
+            justify-content: space-between; /* 영상을 좌우로 나란히 배치합니다. */
+            width: 100%;
+            margin-top: 10px;
+            position: relative; /* 하위 요소를 상대적으로 배치하기 위해 추가 */
+        }
+        .video-container {
+            width: 36%; /* 각 영상 컨테이너의 너비를 조정합니다. */
+            position: relative;
+        }
+        video {
+            width: 100%;
+            height: auto;
+        }
+        .metronome-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center; /* 내용을 가운데 정렬 */
+        }
+        .child {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center; /* 내용을 가운데 정렬 */
+        }
+        .recording-buttons {
+            margin-top: 50px; /* 녹화 버튼과 메트로놈 사이의 간격 조절 */
+        }
+    </style>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 </head>
 <body>
     <h1>Body Movement Recognition</h1>
     
-    <div id="myDiv" style="display: none;">
-        <img id="video_pose" src="" />
+    <div class="container">
+        <div class="videos">
+            <div class="video-container">
+                <div id="myDiv" style="display: none;">
+                    <img id="video_pose" src="" width="640" height="480"/>
+                </div>
+                <button id="playback_button" onclick="togglePlayback()">연주 시작</button>
+            
+                <button class="InstrumentButton" value=0>피아노</button>
+                <button class="InstrumentButton" value=1>피리</button>
+            
+                <button class="PresetButton" value=1>1</button>
+                <button class="PresetButton" value=2>2</button>
+                <button class="PresetButton" value=3>3</button>
+                <button class="PresetButton" value=4>4</button>
+            
+                <button class="RecordingTrueButton" value="True">녹화 시작</button>
+                <button class="RecordingFalseButton" value="False">녹화 정지</button>
+            </div>
+            <div class="metronome-container">
+                <div class="child">
+                    <h2>메트로놈</h2>
+                    <input type="range" min="40" max="240" value="60" onchange="setBpm(this.value)">
+                    <button onclick="decreaseBpm()">-</button>
+                    <span id="bpmDisplay">60</span> BPM
+                    <button onclick="increaseBpm()">+</button>
+                    <br>
+                    <button onclick="startMetronome()">시작</button>
+                    <button onclick="stopMetronome()">중지</button>
+                    <!-- 오디오 파일 미리 로드 -->
+                    <audio id="tickSound" src="/static/metronome_click.ogg" preload="auto"></audio>
+                </div>
+            </div>
+        </div>
     </div>
-    <button id="playback_button" onclick="togglePlayback()">연주 시작</button>
-
-    <button class="InstrumentButton" value=0>피아노</button>
-    <button class="InstrumentButton" value=1>피리</button>
-
-    <button class="PresetButton" value=1>1</button>
-    <button class="PresetButton" value=2>2</button>
-    <button class="PresetButton" value=3>3</button>
-    <button class="PresetButton" value=4>4</button>
 
     <script>
         var myDiv = document.getElementById('myDiv');
@@ -56,6 +122,34 @@
                     url: "/BodyMovements_play",
                     type: "POST",
                     data: {instrument_value: buttonValue},
+                    success: function(response) {
+                        console.log("성공:", response);
+                    },
+                    error: function(error) {
+                        console.log("오류:", error);
+                    }
+                });
+            });
+            $('.RecordingTrueButton').click(function() {
+                var buttonValue = $(this).val();
+                $.ajax({
+                    url: "/BodyMovements_play",
+                    type: "POST",
+                    data: {isRecording: buttonValue},
+                    success: function(response) {
+                        console.log("성공:", response);
+                    },
+                    error: function(error) {
+                        console.log("오류:", error);
+                    }
+                });
+            });
+            $('.RecordingFalseButton').click(function() {
+                var buttonValue = $(this).val();
+                $.ajax({
+                    url: "/BodyMovements_play",
+                    type: "POST",
+                    data: {isRecording: buttonValue},
                     success: function(response) {
                         console.log("성공:", response);
                     },
