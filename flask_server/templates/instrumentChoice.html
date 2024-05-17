@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Instrument Choice</title>
+        <!-- 부트 스트랩 css-->
+        <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        
+        <!-- 부트 스트랩 JS -->
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+        
+        <style>
+        .navbar-brand {
+            margin: auto; 
+        }
+        .instrument-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-top: 30px; /* 상단 네비게이션 바와 겹치지 않도록 패딩 추가 */
+        }
+
+        .instrument-item {
+            border: 1px solid #ccc; /* 테두리 설정 */
+            border-radius: 10px; /* 모서리 둥글게 */
+            padding: 20px; /* 내부 여백 */
+            margin: 10px; /* 외부 여백 */
+            width: 200px; /* 너비 설정 */
+            text-align: center; /* 텍스트 가운데 정렬 */
+            background-color: #CAF0F8; /* 배경색 설정 */
+            font-weight: bold; /* 글씨 두껍게 */
+        }
+
+        .page-title {
+            padding-top: 80px; /* 네비게이션 바 높이보다 조금 더 큰 값으로 설정해 보세요 */
+            text-align: center; /* 제목을 가운데 정렬 */
+        }
+
+        </style>
+    </head>
+    <body>
+        <nav class="navbar fixed-top navbar-light bg-light">
+            <a class="navbar-brand" href="#">Gesture Sound</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <!-- 여기에 드롭다운 메뉴 추가 -->
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            메뉴
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                            <a class="dropdown-item" href="/Movement_play">메인 화면</a>
+                            <a class="dropdown-item" href="/Instrument_choice">악기소리 설정</a>
+                            <a class="dropdown-item" href="/Get_AllMovements">모션 사용자 설정</a>
+                            <a class="dropdown-item" href="/video-playlist">영상 재생 목록</a>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <h2 class="page-title">악기 설정</h2>
+
+        <div class="instrument-container">
+            <button class="instrument-item" value="0">피아노</button>
+            <button class="instrument-item" value="1">피리</button>
+        </div> 
+        
+        <script>
+        $(document).ready(function() {
+            
+         // 녹화 시작/정지 버튼 이벤트
+         $('.instrument-item').click(function() {
+            var buttonValue = $(this).val();
+            $.ajax({
+                url: "/Instrument_choice",
+                type: "POST",
+                data: {instrument_value: buttonValue},
+                success: function(response) {
+                    console.log("성공:", response);
+                },
+                error: function(error) {
+                    console.log("오류:", error);
+                }
+            });
+        });
+    });
+    </script>
+    </body>
+</html>

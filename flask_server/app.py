@@ -1,4 +1,5 @@
 from flask import Flask, render_template, Response, request, session
+from moviepy.editor import VideoFileClip, AudioFileClip, CompositeVideoClip
 
 import cv2
 import mediapipe as mp
@@ -12,12 +13,24 @@ import wave
 import threading
 import datetime
 import subprocess
+import time
+import logging
+
 
 app = Flask(__name__)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 
+logging.basicConfig(filename='app.log', level=logging.DEBUG)
+logging.debug('애플리케이션이 시작됩니다.')
+
 cap = cv2.VideoCapture(0)
-cap.set(cv2.CAP_PROP_FPS, 60)
+width, height = (1920, 1080)
+set_fps = 60
+
+# 해상도 설정
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+cap.set(cv2.CAP_PROP_FPS, set_fps)
 
 pygame.init() #pygame 초기화
 
@@ -79,16 +92,17 @@ def start_recording():
     # 녹음 설정: 체널 수, 샘플 레이트, 버퍼 크기 등을 설정
     stream = p.open(format=pyaudio.paInt16,
                     channels=2,
-                    rate=44100,
+                    rate=44100, # 오디오 샘플 레이트 수정 가능
                     input=True,
                     input_device_index=1,
                     frames_per_buffer=1024)
 
     frames = [] # 오디오 프레임을 저장할 리스트
 
-    # 비디오 녹화를 위한 설정. XVID 코덱을 사용
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    out = cv2.VideoWriter(f"{output_directory}/output_{current_time}.avi", fourcc, 30.0, (640, 480))
+    # 비디오 녹화를 위한 설정. 비디오 코덱을 사용
+    fourcc = cv2.VideoWriter_fourcc(*'avc1')
+    out = cv2.VideoWriter(f"{output_directory}/output_{current_time}.mp4", fourcc, 23.0, (1920, 1080)) # 세 번째 매개변수가 fps(레이트)
+
 
     # 녹음이 진행되는 동안 오디오 데이터를 계속하여 frames 리스트에 추가
     while isRecording:
@@ -109,22 +123,63 @@ def start_recording():
     wf.close()
     frames = [] # 오디오 프레임 데이터를 초기화
 
+'''# 오디오 속도 조절
+def adjust_audio_speed(audio_file, output_file, speed='0.9'):
+    command = ['ffmpeg', '-i', audio_file, '-filter:a', f"atempo={speed}", output_file]
+    try:
+        result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        print(f"Audio speed adjusted: {output_file}")
+    except subprocess.CalledProcessError as e:
+        print("Error Occurred:", e)
+        print("Error Output:", e.stderr.decode())
+
+# 비디오 속도 조절
+def adjust_video_speed(video_file, output_file, speed='0.9'):
+    command = ['ffmpeg', '-i', video_file, '-filter:a', f"atempo={speed}", output_file]
+    try:
+        result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        print(f"Audio speed adjusted: {output_file}")
+    except subprocess.CalledProcessError as e:
+        print("Error Occurred:", e)
+        print("Error Output:", e.stderr.decode())'''
+
 
 # 오디오 파일과 비디오 파일을 병합하는 함수
-def merge_audio_video(video_file, audio_file, output_file): # 오디오, 비디오 파일 병합 함수
-    command = ['ffmpeg', '-y', '-i', video_file, '-i', audio_file, '-c:v', 'copy', '-c:a', 'aac', '-strict', 'experimental', output_file]
+def merge_audio_video(video_file, audio_file, output_file, video_delay=0, audio_delay=0): # 오디오, 비디오 파일 병합 함수
+    '''command = ['ffmpeg', '-y', 
+               '-i', video_file,
+               '-i', audio_file, 
+               '-c:v', 'copy', 
+               '-c:a', 'aac', 
+               '-strict', 'experimental',
+                output_file]
+
     try:
         # 외부 명령어 실행. 병합 과정에서 발생하는 표준 출력과 오류는 각각 stdout, stderr에 저장.
         result = subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         # 병합 완료되면 원본 비디오 파일과 오디오 파일을 삭제
-        os.remove(video_file)
+        #os.remove(video_file)
         os.remove(audio_file)
         print(f"Deleted original files: {video_file} and {audio_file}")
+
     except subprocess.CalledProcessError as e:
         print("Error Occurred:", e)
-        print("Error Output:", e.stderr.decode())
+        print("Error Output:", e.stderr.decode())'''
 
+    # 비디오 클립 로드
+    video_clip = VideoFileClip(video_file, fps=23)
+    # 오디오 클립 로드
+    audio_clip = AudioFileClip(audio_file)
+    # 비디오 클립에 오디오 클립 설정
+    final_clip = video_clip.set_audio(audio_clip)
+    # 파일로 출력
+    final_clip.write_videofile(output_file, codec='libx264', audio_codec='aac')
+    
+    # 원본 비디오 파일과 오디오 파일 삭제
+    os.remove(video_file)
+    os.remove(audio_file)
+    print(f"Deleted original files: {video_file} and {audio_file}")
 
 # 데이터셋 디렉토리 생성
 data_directory = "data"
@@ -312,7 +367,7 @@ def get_pose_set():
 
 # 제스처 인식 모델 학습 및 실시간 제스처 인식을 위한 함수
 def gesture_gen():
-    global gesture_preset, sounds, isRecording, out
+    global gesture_preset, sounds, isRecording, out, height, width, fps
 
     # 학습 데이터 파일 경로 설정
     file_path = 'flask_server/data/gesture/'+ gesture_preset +'/gesture_train.csv'
@@ -348,6 +403,10 @@ def gesture_gen():
 
     max_num_hands = 1 # 최대 인식할 손의 개수
 
+    # 알맞은 프레임 기록
+    frame_count = 0
+    start_time = time.time()  # 시작 시간 기록
+
     # MediaPipe 핸드 제스처 모델 설정
     mp_hands = mp.solutions.hands
     mp_drawing = mp.solutions.drawing_utils
@@ -362,6 +421,10 @@ def gesture_gen():
         ret, img = cap.read()
         if not ret:
             continue
+
+        frame_count += 1
+        current_time = time.time() - start_time  # 현재 경과된 시간 계산
+        fps = round(frame_count / current_time)  # 현재 주사율 계산
 
         img = cv2.flip(img, 1)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -409,6 +472,7 @@ def gesture_gen():
 
         if((isRecording == True) and (isRecording != None)) :
             out.write(img) # 비디오 녹화 상태일 경우, 현재 이미지를 비디오에 기록
+        cv2.putText(img, f"FPS: {fps}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         ret, jpeg = cv2.imencode('.jpg', img)
         frame = jpeg.tobytes() # 프레임을 바이트 형태로 인코딩하여 스트리밍을 위한 준비
         yield (b'--frame\r\n'
@@ -574,7 +638,7 @@ def process_gesture_data():
 @app.route('/HandGestures_play', methods=['GET', 'POST'])
 def hand_gestures_play():
     # 사용자가 손동작을 이용해 음악을 연주하고 녹화할 수 있게 하는 엔드포인트
-    global instrument_code, gesture_preset, isRecording, out, recording_thread, current_time
+    global instrument_code, gesture_preset, isRecording, out, recording_thread, current_time, fps, width, height
     if request.method == 'POST':
         if 'preset' in request.form:
             gesture_preset = request.form['preset']
@@ -588,8 +652,8 @@ def hand_gestures_play():
         if 'isRecording' in request.form:
             if(request.form['isRecording'] == 'True') :
                 update_current_time()
-                fourcc = cv2.VideoWriter_fourcc(*'XVID')
-                out = cv2.VideoWriter(f"{output_directory}/output_{current_time}.avi", fourcc, 30.0, (640, 480))
+                fourcc = cv2.VideoWriter_fourcc(*'avc1')
+                out = cv2.VideoWriter(f"{output_directory}/output_{current_time}.mp4", fourcc, fps, (width, height), cv2.CAP_FFMPEG)
                 isRecording = True
                 recording_thread = threading.Thread(target=start_recording)
                 recording_thread.start()
@@ -599,7 +663,8 @@ def hand_gestures_play():
                 out.release()
                 out = None
                 recording_thread.join()
-                merge_audio_video(f"{output_directory}/output_{current_time}.avi", f"{output_directory}/output_{current_time}.wav", f"{output_directory}/final_output_{current_time}.mp4")
+                
+                merge_audio_video(f"{output_directory}/output_{current_time}.mp4", f"{output_directory}/output_{current_time}.wav", f"{output_directory}/final_output_{current_time}.mp4")
                 return render_template('HandPlay.html', message="녹화를 종료합니다.")
             
     return render_template('HandPlay.html')
