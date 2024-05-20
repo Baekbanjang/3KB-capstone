@@ -434,7 +434,7 @@ def gesture_gen():
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 def pose_gen():
-    global pose_preset, sounds
+    global pose_preset, sounds, isRecording, out, height, width, fps
     # 기존에 수집된 데이터셋 초기화
     file_path = 'data/pose/'+ pose_preset +'/pose_angle_train.csv'
     if os.path.exists(file_path):
@@ -476,11 +476,17 @@ def pose_gen():
     min_detection_confidence=0.5, # 최소 탐지 신뢰값, 기본 0.5
     min_tracking_confidence=0.5) # 최소 추적 신뢰값 , 기본 0.5
 
+    frame_count = 0
+    start_time = time.time()  # 시작 시간 기록
+
     temp_idx = None
     while cap.isOpened():
         ret, img=cap.read()
         if not ret:
             continue
+        frame_count += 1
+        current_time = time.time() - start_time  # 현재 경과된 시간 계산
+        fps = round(frame_count / current_time)  # 현재 주사율 계산
 
         img=cv2.flip(img, 1) # 이미지를 좌우 반전
         imgRGB=cv2.cvtColor(img, cv2.COLOR_BGR2RGB) # BGR 이미지를 RGB로 변환
@@ -518,6 +524,10 @@ def pose_gen():
                 elif idx == 13:
                     if pygame.mixer.music.get_busy():
                         pygame.mixer.music.stop()
+            if isRecording:
+                out.write(img)
+            # 프레임에 주사율 표시
+            cv2.putText(img, f"FPS: {fps}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             ret, jpeg = cv2.imencode('.jpg', img)
             frame = jpeg.tobytes()
             yield (b'--frame\r\n'
@@ -596,7 +606,7 @@ def hand_gestures_play():
                 return render_template('HandPlay.html', message="녹화를 종료합니다.")
     return render_template('HandPlay.html')
 
-@app.route('/BodyMovements_play')   
+@app.route('/BodyMovements_play', methods=['GET', 'POST'])   
 def body_movements_play():
     global instrument_code, pose_preset, isRecording, fourcc, out, audio_recording_thread, current_time, fps, width, height
     if request.method == 'POST':
