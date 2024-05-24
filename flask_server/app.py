@@ -1,7 +1,7 @@
-from flask import Flask, render_template, Response, request, session, jsonify
+from flask import Flask, render_template, Response, request, session, jsonify, send_from_directory
 from pymongo import MongoClient
 from bson.objectid import ObjectId
-from moviepy.editor import VideoFileClip
+from moviepy.editor import VideoFileClip #재생 시간 확인 용도
 import cv2
 import mediapipe as mp
 import numpy as np
@@ -533,78 +533,90 @@ def pose_gen():
             yield (b'--frame\r\n'
                 b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
         
-@app.route('/Get_BodyMovements', methods=['GET', 'POST'])
-def process_pose_data():
-    global pose_code, isStop, pose_preset
+@app.route('/Get_AllMovements', methods=['GET', 'POST'])
+def process_movement_data():
+    global gesture_code, gesture_preset, pose_code, pose_preset, isStop
     if request.method == 'POST':
-        if 'preset' in request.form:
-            pose_preset = request.form['preset']
-            return render_template('GetBodyDataSet.html', message="프리셋 변경")
-        if 'button_value' in request.form:
-            pose_code = request.form['button_value']
-            session['button_value_received'] = True  # 세션에 상태 저장
-            return render_template('GetBodyDataSet.html', message="웹캠 작동을 시작합니다.")
-        if 'stop_sign' in request.form and session.get('button_value_received'):
-            isStop = request.form['stop_sign']
-            session['button_value_received'] = False  # 상태 초기화
-            return render_template('GetBodyDataSet.html', message="웹캠 작동을 종료합니다.")        
-        if 'delete_button_value' in request.form:
-            pose_code = request.form['delete_button_value']
-            file_path = 'data/pose/'+ pose_preset +'/pose_angle_train_'+ code[pose_code] + '.csv'
-            if os.path.exists(file_path):
-                os.remove(file_path)
-            return render_template('GetBodyDataSet.html', message="파일을 삭제합니다.")
-    return render_template('GetBodyDataSet.html')
+        mode = request.form.get('mode')
 
-@app.route('/Get_HandGestures', methods=['GET', 'POST'])
-def process_gesture_data():
-    global gesture_code, isStop, gesture_preset
-    if request.method == 'POST':
-        if 'preset' in request.form:
-            gesture_preset = request.form['preset']
-            return render_template('GetHandDataSet.html', message="프리셋 변경")
-        if 'button_value' in request.form:
-            gesture_code = request.form['button_value']
-            session['button_value_received'] = True  # 세션에 상태 저장
-            return render_template('GetHandDataSet.html', message="웹캠 작동을 시작합니다.")
-        if 'stop_sign' in request.form and session.get('button_value_received'):
-            isStop = request.form['stop_sign']
-            session['button_value_received'] = False  # 상태 초기화
-            return render_template('GetHandDataSet.html', message="웹캠 작동을 종료합니다.")
-        if 'delete_button_value' in request.form:
-            gesture_code = request.form['delete_button_value']
-            file_path = 'data/gesture/'+ gesture_preset +'/gesture_train_'+ code[gesture_code] + '.csv'
-            if os.path.exists(file_path):
-                os.remove(file_path)
-            return render_template('GetHandDataSet.html', message="파일을 삭제합니다.")
-    return render_template('GetHandDataSet.html')
+        if (mode == "gesture"):
+            if 'preset' in request.form:
+                gesture_preset = request.form['preset']
+                return render_template('GetMovementDataSet.html', message="프리셋 변경")
 
-@app.route('/HandGestures_play', methods=['GET', 'POST'])
+            elif 'button_value' in request.form:
+                gesture_code = request.form['button_value']
+                session['button_value_received'] = True  # 세션에 상태 저장
+                return render_template('GetMovementDataSet.html', message="웹캠 작동을 시작합니다.")
+
+            elif 'stop_sign' in request.form and session.get('button_value_received'):
+                isStop = request.form['stop_sign']
+                session['button_value_received'] = False  # 상태 초기화
+                return render_template('GetMovementDataSet.html', message="웹캠 작동을 종료합니다.")
+            
+            elif 'delete_button_value' in request.form:
+                gesture_code = request.form['delete_button_value']
+                file_path = 'flask_server/data/gesture/' + gesture_preset + '/gesture_train_' + code[gesture_code] + '.csv'
+
+                try:
+                    os.remove(file_path)
+                except Exception as e:
+                    print(f"파일 삭제 중 오류 발생: {e}")
+                return render_template('GetMovementDataSet.html')
+            
+        if (mode == "pose"):
+            if 'preset' in request.form:
+                pose_preset = request.form['preset']
+                return render_template('GetMovementDataSet.html', message="프리셋 변경")
+
+            elif 'button_value' in request.form:
+                pose_code = request.form['button_value']
+                session['button_value_received'] = True  # 세션에 상태 저장
+                return render_template('GetMovementDataSet.html', message="웹캠 작동을 시작합니다.")
+
+            elif 'stop_sign' in request.form and session.get('button_value_received'):
+                isStop = request.form['stop_sign']
+                session['button_value_received'] = False  # 상태 초기화
+                return render_template('GetMovementDataSet.html', message="웹캠 작동을 종료합니다.")
+            
+            elif 'delete_button_value' in request.form:
+                pose_code = request.form['delete_button_value']
+                file_path = 'flask_server/data/pose/' + pose_preset + '/pose_angle_train_' + code[pose_code] + '.csv'
+                print(file_path)
+                try:
+                    os.remove(file_path)
+                except Exception as e:
+                    print(f"파일 삭제 중 오류 발생: {e}")
+                return render_template('GetMovementDataSet.html')
+
+    return render_template('GetMovementDataSet.html')
+
+@app.route('/Movement_play', methods=['GET', 'POST'])
 def hand_gestures_play():
     global instrument_code, gesture_preset, isRecording, fourcc, out, audio_recording_thread, current_time, fps, width, height
     if request.method == 'POST':
-        if 'preset' in request.form:
-            gesture_preset = request.form['preset']
-            return render_template('HandPlay.html', message="프리셋 변경")
-        if 'instrument_value' in request.form:
-            instrument_code = request.form['instrument_value']
-            update_sounds()
-            return render_template('HandPlay.html', message="악기 변경")
         if 'isRecording' in request.form:
-            if(request.form['isRecording'] == 'True') :
+            if 'preset' in request.form:
+                gesture_preset = request.form['preset']
+                return render_template('MovementPlay.html', message="프리셋 변경")
+            if (request.form['isRecording'] == 'True'):
                 update_current_time()
-                out = cv2.VideoWriter(f"output_{current_time}.avi", fourcc, fps, (width, height))
+                out = cv2.VideoWriter(
+                    f"{output_directory}/output_{current_time}.mp4", fourcc, fps, (width, height), cv2.CAP_FFMPEG)
                 isRecording = True
                 audio_recording_thread = threading.Thread(target=record_audio)
                 audio_recording_thread.start()
-                return render_template('HandPlay.html', message="녹화를 시작합니다.")
-            elif(request.form['isRecording'] == 'False') :
+                return render_template('MovementPlay.html', message="녹화를 시작합니다.")
+
+            elif (request.form['isRecording'] == 'False'):
                 isRecording = None
                 audio_recording_thread.join()
                 out.release()
-                merge_audio_video(f"output_{current_time}.avi", f"output_{current_time}.wav", f"final_output_{current_time}.mp4")
-                return render_template('HandPlay.html', message="녹화를 종료합니다.")
-    return render_template('HandPlay.html')
+                merge_audio_video(f"{output_directory}/output_{current_time}.mp4",
+                                  f"{output_directory}/output_{current_time}.wav", f"{output_directory}/final_output_{current_time}.mp4")
+                return render_template('MovementPlay.html', message="녹화를 종료합니다.")
+
+    return render_template('MovementPlay.html')
 
 @app.route('/BodyMovements_play', methods=['GET', 'POST'])   
 def body_movements_play():
@@ -613,10 +625,6 @@ def body_movements_play():
         if 'preset' in request.form:
             pose_preset = request.form['preset']
             return render_template('BodyPlay.html', message="프리셋 변경")
-        if 'instrument_value' in request.form:
-            instrument_code = request.form['instrument_value']
-            update_sounds()
-            return render_template('BodyPlay.html', message="악기 변경")
         if 'isRecording' in request.form:
             if(request.form['isRecording'] == 'True') :
                 update_current_time()
@@ -633,7 +641,19 @@ def body_movements_play():
                 return render_template('BodyPlay.html', message="녹화를 종료합니다.")
     return render_template('BodyPlay.html')
 
-@app.route('/Playlist')   
+@app.route('/Instrument_choice', methods=['GET', 'POST'])
+def instrument_choice():
+    global instrument_code
+    files = os.listdir('instrument/'+instrument[instrument_code])
+    files = [file for file in files if file.endswith('.ogg')]
+    if request.method == 'POST':
+        if 'instrument_value' in request.form:
+            instrument_code = request.form['instrument_value']
+            update_sounds()
+            return render_template('instrumentChoice.html', message="악기 변경")
+    return render_template('instrumentChoice.html', files=files)
+
+@app.route('/video-playlist')   
 def playlist():
     global sort_by, sort_direction
     sort_by = 'name'
@@ -642,7 +662,7 @@ def playlist():
     videolist = list(fs.find())  # GridFS에서 모든 파일을 조회
     return render_template('Playlist.html', videos=videolist, sort_by=sort_by, sort_direction=sort_direction)
 
-@app.route('/Playlist/view/<video_id>', methods=['GET'])
+@app.route('/video-playlist/view/<video_id>', methods=['GET'])
 def view(video_id):
     # MongoDB에서 해당 비디오 파일 가져오기
     video = fs.find_one({'_id': bson.ObjectId(video_id)})
@@ -655,12 +675,12 @@ def view(video_id):
     else:
         return 'File not found', 404
 
-#@app.route('/Playlist/download/<video_id>')
+#@app.route('/video-playlist/download/<video_id>')
 #def download(video_id):
 #    video = fs.get(ObjectId(video_id))
 #    return send_file(video, attachment_filename=video.filename, as_attachment=True)
 
-@app.route('/Playlist/rename/<video_id>', methods=['POST'])
+@app.route('/video-playlist/rename/<video_id>', methods=['POST'])
 def rename(video_id):
     new_name = request.form.get('new_name')
     try:
@@ -678,7 +698,7 @@ def rename(video_id):
         error_message = str(e) if str(e) else 'An error occurred while updating video name.'
         return jsonify({'success': False, 'message': error_message}), 500
 
-@app.route('/Playlist/delete_selected', methods=['POST'])
+@app.route('/video-playlist/delete_selected', methods=['POST'])
 def delete_selected():
     global sort_by, sort_direction
     video_ids = request.form.getlist('video_ids')
@@ -687,7 +707,7 @@ def delete_selected():
     videolist = list(fs.find())  # GridFS에서 모든 파일을 조회
     return render_template('Playlist.html', videos=videolist, sort_by=sort_by, sort_direction=sort_direction)
 
-@app.route('/Playlist/<sort_by>/<sort_direction>')
+@app.route('/video-playlist/<sort_by>/<sort_direction>')
 def list_videos(sort_by, sort_direction):
     videolist = get_sorted_videos(sort_by, sort_direction)
     # HTML 템플릿에 비디오 목록 전달
@@ -712,6 +732,10 @@ def get_video_gesture():
 def get_video_pose():
     return Response(get_pose_set(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/files/<filename>')
+def get_file(filename):
+    return send_from_directory('instrument/'+instrument[instrument_code], filename)
 
 @app.route('/')
 def get_main():
