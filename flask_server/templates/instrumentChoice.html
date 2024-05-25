@@ -39,6 +39,9 @@
             text-align: center; /* 제목을 가운데 정렬 */
         }
 
+        #audioPlayer {
+            display: none;
+        }
         </style>
     </head>
     <body>
@@ -69,10 +72,17 @@
         <h2 class="page-title">악기 설정</h2>
         <div class="instrument-container">
             <button class="instrument-item" value="0">피아노</button>
-            <a href="#" id="PianoAllPlay">미리듣기</a>
+            <button onclick="playPreview(0)">미리듣기</button>
             <button class="instrument-item" value="1">피리</button>
-            <a href="#" id="PipeAllPlay">미리듣기</a>
-        </div> 
+            <button onclick="playPreview(1)">미리듣기</button>
+            <button class="instrument-item" value="2">오르간</button>
+            <button onclick="playPreview(2)">미리듣기</button>
+            <button class="instrument-item" value="3">실로폰</button>
+            <button onclick="playPreview(3)">미리듣기</button>
+            <button class="instrument-item" value="4">플루트</button>
+            <button onclick="playPreview(4)">미리듣기</button>
+        </div>
+        <audio id="audioPlayer"></audio>
         
         <script>
         $(document).ready(function() {
@@ -93,6 +103,31 @@
                 });
             });
         });
+        async function playPreview(instrumentCode) {
+            const response = await fetch(`/api/music_files/${instrumentCode}`);
+            const musicFiles = await response.json();
+            if (musicFiles.length === 0) {
+                alert("No music files found!");
+                return;
+            }
+
+            const audioPlayer = document.getElementById('audioPlayer');
+            let currentIndex = 0;
+
+            function playNext() {
+                if (currentIndex < musicFiles.length) {
+                    audioPlayer.src = `/music/${instrumentCode}/${musicFiles[currentIndex]}`;
+                    audioPlayer.play();
+                    setTimeout(() => {
+                        audioPlayer.pause();
+                        currentIndex++;
+                        playNext();
+                    }, 500);
+                }
+            }
+
+            playNext();
+        }
     </script>
     </body>
 </html>

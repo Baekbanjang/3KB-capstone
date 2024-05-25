@@ -72,8 +72,11 @@ mode = {
 }
 
 instrument = {
-    '0': "piano",
-    '1': "pipe"
+    '0': "Piano",
+    '1': "Pipe",
+    '2': "Organ",
+    '3': "Xylophone",
+    '4': "Flute"
 }
 
 sounds = {
@@ -644,14 +647,12 @@ def body_movements_play():
 @app.route('/Instrument_choice', methods=['GET', 'POST'])
 def instrument_choice():
     global instrument_code
-    files = os.listdir('instrument/'+instrument[instrument_code])
-    files = [file for file in files if file.endswith('.ogg')]
     if request.method == 'POST':
         if 'instrument_value' in request.form:
             instrument_code = request.form['instrument_value']
             update_sounds()
             return render_template('instrumentChoice.html', message="악기 변경")
-    return render_template('instrumentChoice.html', files=files)
+    return render_template('instrumentChoice.html')
 
 @app.route('/video-playlist')   
 def playlist():
@@ -733,9 +734,22 @@ def get_video_pose():
     return Response(get_pose_set(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
-@app.route('/files/<filename>')
-def get_file(filename):
-    return send_from_directory('instrument/'+instrument[instrument_code], filename)
+@app.route('/api/music_files/<instrument_code>')
+def get_music_files(instrument_code):
+    instrument_dir = instrument.get(instrument_code)
+    if not instrument_dir:
+        return jsonify([]), 404
+    music_dir = os.path.join('instrument', instrument_dir)
+    files = [f for f in os.listdir(music_dir) if f.endswith('.ogg')]
+    return jsonify(files)
+
+@app.route('/music/<instrument_code>/<filename>')
+def serve_music_file(instrument_code, filename):
+    instrument_dir = instrument.get(instrument_code)
+    if not instrument_dir:
+        return '', 404
+    music_dir = os.path.join('instrument', instrument_dir)
+    return send_from_directory(music_dir, filename)
 
 @app.route('/')
 def get_main():
