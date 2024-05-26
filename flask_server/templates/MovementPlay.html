@@ -213,6 +213,7 @@
             const poseModeButton = document.getElementById('PoseModeButton');
             const closeButton = document.getElementById('close-btn');
             const showVideoButton = document.getElementById('show-video-btn');
+            currentMode = 'gesture'; // 기본 모드를 'gesture'로 설정
 
             gestureModeButton.addEventListener('click', function () {
                 gestureModeButton.classList.add('btn-primary');
@@ -220,6 +221,8 @@
 
                 poseModeButton.classList.add('btn-secondary');
                 poseModeButton.classList.remove('btn-primary');
+
+                currentMode = 'gesture'; // 제스처 모드 선택 시
 
                 document.getElementById('video_movement').src = "{{ url_for('processed_video_gesture') }}";
             });
@@ -230,6 +233,8 @@
 
                 gestureModeButton.classList.add('btn-secondary');
                 gestureModeButton.classList.remove('btn-primary');
+
+                currentMode = 'pose'; // 제스처 모드 선택 시
 
                 document.getElementById('video_movement').src = "{{ url_for('processed_video_pose') }}";
             });
@@ -280,7 +285,7 @@
                 $.ajax({
                     url: "/Movement_play",
                     type: "POST",
-                    data: { isRecording: "True" },
+                    data: { isRecording: "True"},
                     success: function (response) {
                         console.log("성공:", response);
                         $('#myDiv').show();
@@ -295,7 +300,7 @@
                 $.ajax({
                     url: "/Movement_play",
                     type: "POST",
-                    data: { isRecording: "False" },
+                    data: { isRecording: "False"},
                     success: function (response) {
                         console.log("성공:", response);
                     },
@@ -311,7 +316,7 @@
                 $.ajax({
                     url: "/Movement_play",
                     type: "POST",
-                    data: {preset: buttonValue},
+                    data: {preset: buttonValue, mode: currentMode},
                     success: function(response) {
                         console.log("성공:", response);
                     },

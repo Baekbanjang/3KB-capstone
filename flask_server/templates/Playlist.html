@@ -234,7 +234,7 @@
             }
 
             if (confirm("선택된 비디오를 삭제하시겠습니까?")) {
-                fetch('/Playlist/delete_selected', {
+                fetch('/video-playlist/delete_selected', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: new URLSearchParams({ video_ids: selectedVideoIds }).toString()

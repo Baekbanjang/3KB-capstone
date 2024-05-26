@@ -1,4 +1,4 @@
-from flask import Flask, render_template, Response, request, session, jsonify, send_from_directory
+from flask import Flask, render_template, Response, request, session, jsonify, send_from_directory, redirect, url_for
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from moviepy.editor import VideoFileClip #재생 시간 확인 용도
@@ -136,7 +136,7 @@ def record_audio():
     p.terminate()
 
     # 오디오 파일로 저장
-    wf = wave.open(f"output_{current_time}.wav", 'wb')
+    wf = wave.open(f"{output_directory}/output_{current_time}.wav", 'wb')
     wf.setnchannels(2)
     wf.setsampwidth(p.get_sample_size(pyaudio.paInt16))
     wf.setframerate(44100)
@@ -332,34 +332,43 @@ def get_pose_set():
 
 def gesture_gen():
     global gesture_preset, sounds, isRecording, out, height, width, fps
-    file_path = 'data/gesture/'+ gesture_preset +'/gesture_train.csv'
-    if os.path.exists(file_path):
-        os.remove(file_path)
+    def load_and_train_knn(preset):
+        file_path = 'data/gesture/' + preset + '/gesture_train.csv'
+        if os.path.exists(file_path):
+            os.remove(file_path)
 
-    #data 폴더에 있는 데이터셋들 취합
-    file_list = glob.glob('data/gesture/'+ gesture_preset +'/' + '*')
-    with open('data/gesture/'+ gesture_preset +'/gesture_train.csv', 'w') as f: #2-1.merge할 파일을 열고
-        for file in file_list:
-            with open(file ,'r') as f2:
-                while True:
-                    line = f2.readline() #2.merge 대상 파일의 row 1줄을 읽어서
+        # Collect datasets in the data folder
+        file_list = glob.glob('data/gesture/' + preset + '/' + '*')
+        with open(file_path, 'w') as f:  # Open file to merge data
+            for file in file_list:
+                with open(file, 'r') as f2:
+                    while True:
+                        line = f2.readline()  # Read a row from the merge target file
 
-                    if not line: #row가 없으면 해당 csv 파일 읽기 끝
-                        break
+                        if not line:  # End of the csv file
+                            break
 
-                    f.write(line) #3.읽은 row 1줄을 merge할 파일에 쓴다.
+                        f.write(line)  # Write the row to the merge file
                 
-            file_name = file.split('/')[-1]
+                file_name = file.split('/')[-1]
 
-    # Gesture recognition model
-    if os.path.exists('data/gesture/'+ gesture_preset +'/gesture_train.csv') and os.path.getsize('data/gesture/'+ gesture_preset +'/gesture_train.csv') > 0:
-        file = np.genfromtxt('data/gesture/'+ gesture_preset +'/gesture_train.csv', delimiter=',')
-    else:
-        file = np.empty((0, 16))
-    angle = file[:,:-1].astype(np.float32)
-    label = file[:, -1].astype(np.float32)  
-    knn = cv2.ml.KNearest_create()
-    knn.train(angle, cv2.ml.ROW_SAMPLE, label)
+        # Gesture recognition model
+        if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+            file = np.genfromtxt(file_path, delimiter=',')
+        else:
+            file = np.empty((0, 16))
+            return None
+        
+        angle = file[:, :-1].astype(np.float32)
+        label = file[:, -1].astype(np.float32)
+        
+        knn = cv2.ml.KNearest_create()
+        knn.train(angle, cv2.ml.ROW_SAMPLE, label)
+        
+        return knn
+
+    current_preset = gesture_preset
+    knn = load_and_train_knn(current_preset)
 
     max_num_hands = 1
 
@@ -377,6 +386,9 @@ def gesture_gen():
     temp_idx = None
 
     while cap.isOpened():
+        if gesture_preset != current_preset:
+            current_preset = gesture_preset
+            knn = load_and_train_knn(current_preset)
         ret, img = cap.read()
         if not ret:
             continue
@@ -415,18 +427,19 @@ def gesture_gen():
 
                 # Inference gesture
                 data = np.array([angle], dtype=np.float32)
-                ret, results, neighbours, dist = knn.findNearest(data, 3)
-                idx = int(results[0][0])
-                if temp_idx != idx :
-                    temp_idx = idx
-                    pygame.mixer.stop()
-                    if idx in sounds:
-                        sound = sounds[idx]
-                        sound.set_volume(0.3)
-                        sound.play()
-                    elif idx == 13:
-                        if pygame.mixer.music.get_busy():
-                            pygame.mixer.music.stop()
+                if knn is not None :
+                    ret, results, neighbours, dist = knn.findNearest(data, 3)
+                    idx = int(results[0][0])
+                    if temp_idx != idx :
+                        temp_idx = idx
+                        pygame.mixer.stop()
+                        if idx in sounds:
+                            sound = sounds[idx]
+                            sound.set_volume(0.3)
+                            sound.play()
+                        elif idx == 13:
+                            if pygame.mixer.music.get_busy():
+                                pygame.mixer.music.stop()
         if isRecording:
             out.write(img)
         # 프레임에 주사율 표시
@@ -438,36 +451,43 @@ def gesture_gen():
 
 def pose_gen():
     global pose_preset, sounds, isRecording, out, height, width, fps
-    # 기존에 수집된 데이터셋 초기화
-    file_path = 'data/pose/'+ pose_preset +'/pose_angle_train.csv'
-    if os.path.exists(file_path):
-        os.remove(file_path)
+    def load_and_train_knn(preset):        
+        # 기존에 수집된 데이터셋 초기화
+        file_path = 'data/pose/'+ preset +'/pose_angle_train.csv'
+        if os.path.exists(file_path):
+            os.remove(file_path)
+       
+        # data 폴더에 있는 데이터셋들 취합
+        file_list = glob.glob('data/pose/'+ preset +'/' + '*')
+        with open('data/pose/'+ preset +'/pose_angle_train.csv', 'w') as f: # 취합할 파일을 열고
+            for file in file_list:
+                with open(file ,'r') as f2:
+                    while True:
+                        line = f2.readline() # 대상 파일의 row를 1줄 읽고
 
-    # data 폴더에 있는 데이터셋들 취합
-    file_list = glob.glob('data/pose/'+ pose_preset +'/' + '*')
-    with open('data/pose/'+ pose_preset +'/pose_angle_train.csv', 'w') as f: # 취합할 파일을 열고
-        for file in file_list:
-            with open(file ,'r') as f2:
-                while True:
-                    line = f2.readline() # 대상 파일의 row를 1줄 읽고
+                        if not line: # row가 없으면 해당 csv 파일 읽기 끝
+                            break
 
-                    if not line: # row가 없으면 해당 csv 파일 읽기 끝
-                        break
-
-                    f.write(line) # 읽은 row를 취합할 파일에 쓴다.
+                        f.write(line) # 읽은 row를 취합할 파일에 쓴다.
                 
-            file_name = file.split('\\')[-1]
+                file_name = file.split('\\')[-1]
 
-    # 포즈 인식 모델 로드
-    if os.path.exists('data/pose/'+ pose_preset +'/pose_angle_train.csv') and os.path.getsize('data/pose/'+ pose_preset +'/pose_angle_train.csv') > 0:
-        file = np.genfromtxt('data/pose/'+ pose_preset +'/pose_angle_train.csv', delimiter=',')
-    else:
-        file = np.empty((0, 9))
+        # 포즈 인식 모델 로드
+        if os.path.exists('data/pose/'+ preset +'/pose_angle_train.csv') and os.path.getsize('data/pose/'+ preset +'/pose_angle_train.csv') > 0:
+            file = np.genfromtxt('data/pose/'+ preset +'/pose_angle_train.csv', delimiter=',')
+        else:
+            file = np.empty((0, 9))
+            return None
 
-    coordinate=file[:,:-1].astype(np.float32) # 각도 데이터
-    label=file[:,-1].astype(np.float32) # 레이블 데이터
-    knn=cv2.ml.KNearest_create()
-    knn.train(coordinate, cv2.ml.ROW_SAMPLE, label) # KNN 모델 훈련
+        coordinate=file[:,:-1].astype(np.float32) # 각도 데이터
+        label=file[:,-1].astype(np.float32) # 레이블 데이터
+        knn=cv2.ml.KNearest_create()
+        knn.train(coordinate, cv2.ml.ROW_SAMPLE, label) # KNN 모델 훈련
+
+        return knn
+
+    current_preset = gesture_preset
+    knn = load_and_train_knn(current_preset)
 
     # MediaPipe pose 모델 초기화
     mp_pose = mp.solutions.pose
@@ -484,6 +504,9 @@ def pose_gen():
 
     temp_idx = None
     while cap.isOpened():
+        if pose_preset != current_preset:
+            current_preset = pose_preset
+            knn = load_and_train_knn(current_preset)
         ret, img=cap.read()
         if not ret:
             continue
@@ -514,19 +537,20 @@ def pose_gen():
             pose_array = np.array([angle1, angle2, angle3, angle4, angle5, angle6, angle7, angle8])  # 각도 계산 결과를 배열에 추가. 필요한 각도 수에 맞게 조정하세요.
             pose_array = pose_array.reshape((1, -1)).astype(np.float32)  # KNN 모델에 입력하기 위한 형태로 변환
 
-            # 포즈 인식 및 해당 포즈에 맞는 음악 재생
-            ret, results, neighbours, dist = knn.findNearest(pose_array, 3)  # KNN을 사용하여 가장 가까운 포즈 인식
-            idx = int(results[0][0])
-            if temp_idx != idx :
-                temp_idx = idx
-                pygame.mixer.stop()
-                if idx in sounds:
-                    sound = sounds[idx]
-                    sound.set_volume(0.3)
-                    sound.play()
-                elif idx == 13:
-                    if pygame.mixer.music.get_busy():
-                        pygame.mixer.music.stop()
+            if knn is not None :
+                # 포즈 인식 및 해당 포즈에 맞는 음악 재생
+                ret, results, neighbours, dist = knn.findNearest(pose_array, 3)  # KNN을 사용하여 가장 가까운 포즈 인식
+                idx = int(results[0][0])
+                if temp_idx != idx :
+                    temp_idx = idx
+                    pygame.mixer.stop()
+                    if idx in sounds:
+                        sound = sounds[idx]
+                        sound.set_volume(0.3)
+                        sound.play()
+                    elif idx == 13:
+                        if pygame.mixer.music.get_busy():
+                            pygame.mixer.music.stop()
             if isRecording:
                 out.write(img)
             # 프레임에 주사율 표시
@@ -559,7 +583,7 @@ def process_movement_data():
             
             elif 'delete_button_value' in request.form:
                 gesture_code = request.form['delete_button_value']
-                file_path = 'flask_server/data/gesture/' + gesture_preset + '/gesture_train_' + code[gesture_code] + '.csv'
+                file_path = 'data/gesture/' + gesture_preset + '/gesture_train_' + code[gesture_code] + '.csv'
 
                 try:
                     os.remove(file_path)
@@ -584,7 +608,7 @@ def process_movement_data():
             
             elif 'delete_button_value' in request.form:
                 pose_code = request.form['delete_button_value']
-                file_path = 'flask_server/data/pose/' + pose_preset + '/pose_angle_train_' + code[pose_code] + '.csv'
+                file_path = 'data/pose/' + pose_preset + '/pose_angle_train_' + code[pose_code] + '.csv'
                 print(file_path)
                 try:
                     os.remove(file_path)
@@ -596,53 +620,33 @@ def process_movement_data():
 
 @app.route('/Movement_play', methods=['GET', 'POST'])
 def hand_gestures_play():
-    global instrument_code, gesture_preset, isRecording, fourcc, out, audio_recording_thread, current_time, fps, width, height
+    global instrument_code, gesture_preset, pose_preset, isRecording, fourcc, out, audio_recording_thread, current_time, fps, width, height
     if request.method == 'POST':
-        if 'isRecording' in request.form:
+        mode = request.form.get('mode')
+        if (mode == "gesture"):
             if 'preset' in request.form:
                 gesture_preset = request.form['preset']
                 return render_template('MovementPlay.html', message="프리셋 변경")
-            if (request.form['isRecording'] == 'True'):
+        if (mode == "pose"):
+            if 'preset' in request.form:
+                pose_preset = request.form['preset']
+                return render_template('MovementPlay.html', message="프리셋 변경")
+        if 'isRecording' in request.form:
+            if(request.form['isRecording'] == 'True') :
                 update_current_time()
-                out = cv2.VideoWriter(
-                    f"{output_directory}/output_{current_time}.mp4", fourcc, fps, (width, height), cv2.CAP_FFMPEG)
+                out = cv2.VideoWriter(f"{output_directory}/output_{current_time}.avi", fourcc, fps, (width, height))
                 isRecording = True
                 audio_recording_thread = threading.Thread(target=record_audio)
                 audio_recording_thread.start()
                 return render_template('MovementPlay.html', message="녹화를 시작합니다.")
-
-            elif (request.form['isRecording'] == 'False'):
-                isRecording = None
-                audio_recording_thread.join()
-                out.release()
-                merge_audio_video(f"{output_directory}/output_{current_time}.mp4",
-                                  f"{output_directory}/output_{current_time}.wav", f"{output_directory}/final_output_{current_time}.mp4")
-                return render_template('MovementPlay.html', message="녹화를 종료합니다.")
-
-    return render_template('MovementPlay.html')
-
-@app.route('/BodyMovements_play', methods=['GET', 'POST'])   
-def body_movements_play():
-    global instrument_code, pose_preset, isRecording, fourcc, out, audio_recording_thread, current_time, fps, width, height
-    if request.method == 'POST':
-        if 'preset' in request.form:
-            pose_preset = request.form['preset']
-            return render_template('BodyPlay.html', message="프리셋 변경")
-        if 'isRecording' in request.form:
-            if(request.form['isRecording'] == 'True') :
-                update_current_time()
-                out = cv2.VideoWriter(f"output_{current_time}.avi", fourcc, fps, (width, height))
-                isRecording = True
-                audio_recording_thread = threading.Thread(target=record_audio)
-                audio_recording_thread.start()
-                return render_template('BodyPlay.html', message="녹화를 시작합니다.")
             elif(request.form['isRecording'] == 'False') :
                 isRecording = None
                 audio_recording_thread.join()
                 out.release()
-                merge_audio_video(f"output_{current_time}.avi", f"output_{current_time}.wav", f"final_output_{current_time}.mp4")
-                return render_template('BodyPlay.html', message="녹화를 종료합니다.")
-    return render_template('BodyPlay.html')
+                merge_audio_video(f"{output_directory}/output_{current_time}.avi", 
+                                f"{output_directory}/output_{current_time}.wav", f"final_output_{current_time}.mp4")
+                return render_template('MovementPlay.html', message="녹화를 종료합니다.")
+    return render_template('MovementPlay.html')
 
 @app.route('/Instrument_choice', methods=['GET', 'POST'])
 def instrument_choice():
@@ -701,12 +705,12 @@ def rename(video_id):
 
 @app.route('/video-playlist/delete_selected', methods=['POST'])
 def delete_selected():
-    global sort_by, sort_direction
     video_ids = request.form.getlist('video_ids')
+    sort_by = request.form.get('sort_by', 'name')
+    sort_direction = request.form.get('sort_direction', 'asc')
     for video_id in video_ids:
         fs.delete(ObjectId(video_id))
-    videolist = list(fs.find())  # GridFS에서 모든 파일을 조회
-    return render_template('Playlist.html', videos=videolist, sort_by=sort_by, sort_direction=sort_direction)
+    return redirect(url_for('list_videos', sort_by=sort_by, sort_direction=sort_direction))
 
 @app.route('/video-playlist/<sort_by>/<sort_direction>')
 def list_videos(sort_by, sort_direction):
