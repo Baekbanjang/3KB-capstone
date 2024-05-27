@@ -616,7 +616,7 @@ def process_movement_data():
                     print(f"파일 삭제 중 오류 발생: {e}")
                 return render_template('GetMovementDataSet.html')
 
-    return render_template('GetMovementDataSet.html')
+    return render_template('GetMovementDataSet.html', gesture_preset=gesture_preset, pose_preset=pose_preset)
 
 @app.route('/Movement_play', methods=['GET', 'POST'])
 def hand_gestures_play():
@@ -646,7 +646,7 @@ def hand_gestures_play():
                 merge_audio_video(f"{output_directory}/output_{current_time}.avi", 
                                 f"{output_directory}/output_{current_time}.wav", f"final_output_{current_time}.mp4")
                 return render_template('MovementPlay.html', message="녹화를 종료합니다.")
-    return render_template('MovementPlay.html')
+    return render_template('MovementPlay.html', gesture_preset=gesture_preset, pose_preset=pose_preset)
 
 @app.route('/Instrument_choice', methods=['GET', 'POST'])
 def instrument_choice():

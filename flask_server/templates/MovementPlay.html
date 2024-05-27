@@ -128,7 +128,7 @@
     </style>
 </head>
 
-<body>
+<body data-gesture-preset="{{ gesture_preset }}" data-pose-preset="{{ pose_preset }}">
     <nav class="navbar fixed-top navbar-light bg-light">
         <a class="navbar-brand" href="#">Gesture Sound</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse"
@@ -164,10 +164,10 @@
             </div>
 
             <div>
-                <button class="PresetButton" value=1>1</button>
-                <button class="PresetButton" value=2>2</button>
-                <button class="PresetButton" value=3>3</button>
-                <button class="PresetButton" value=4>4</button>
+                <button class="btn btn-primary PresetButton" value=1>1</button>
+                <button class="btn btn-primary PresetButton" value=2>2</button>
+                <button class="btn btn-primary PresetButton" value=3>3</button>
+                <button class="btn btn-primary PresetButton" value=4>4</button>
             </div>
         </div>
 
@@ -208,11 +208,25 @@
     </div>
 
     <script>
+        function updateButtonColors(preset) {
+            const buttons = document.querySelectorAll('.PresetButton');
+            buttons.forEach(button => {
+                button.classList.remove('btn-success');
+                button.classList.add('btn-primary');
+            });
+            const activeButton = document.querySelector('.PresetButton[value="' + preset + '"]');
+            if (activeButton) {
+                activeButton.classList.remove('btn-primary');
+                activeButton.classList.add('btn-success');
+            }
+        }
         document.addEventListener('DOMContentLoaded', function () {
             const gestureModeButton = document.getElementById('GestureModeButton');
             const poseModeButton = document.getElementById('PoseModeButton');
             const closeButton = document.getElementById('close-btn');
             const showVideoButton = document.getElementById('show-video-btn');
+            gesturePreset = document.body.getAttribute('data-gesture-preset');
+            posePreset = document.body.getAttribute('data-pose-preset');
             currentMode = 'gesture'; // 기본 모드를 'gesture'로 설정
 
             gestureModeButton.addEventListener('click', function () {
@@ -225,6 +239,7 @@
                 currentMode = 'gesture'; // 제스처 모드 선택 시
 
                 document.getElementById('video_movement').src = "{{ url_for('processed_video_gesture') }}";
+                updateButtonColors(gesturePreset);
             });
 
             poseModeButton.addEventListener('click', function () {
@@ -237,6 +252,7 @@
                 currentMode = 'pose'; // 제스처 모드 선택 시
 
                 document.getElementById('video_movement').src = "{{ url_for('processed_video_pose') }}";
+                updateButtonColors(posePreset);
             });
         });
 
@@ -278,6 +294,12 @@
         }
 
         $(document).ready(function () {
+            // 초기 프리셋 값에 따라 버튼 색 변경
+            $('.PresetButton').each(function() {
+                if ($(this).val() == gesturePreset) {
+                    $(this).removeClass('btn-primary').addClass('btn-success');
+                }
+            });
             $('#myDiv').show();
             $('#video_movement').attr('src', "{{ url_for('processed_video_gesture') }}");
 
@@ -310,9 +332,17 @@
                 });
             });
 
-            $('.PresetButton').click(function() {
+            $('.PresetButton').click(function () {
                 var buttonValue = $(this).val();
                 console.log("버튼 값:", buttonValue);
+                if (currentMode === 'gesture') {
+                    gesturePreset = buttonValue;
+                } else if (currentMode === 'pose') {
+                    posePreset = buttonValue;
+                }
+                updateButtonColors(buttonValue);
+                $('.PresetButton').removeClass('btn-success').addClass('btn-primary');
+                $(this).removeClass('btn-primary').addClass('btn-success');
                 $.ajax({
                     url: "/Movement_play",
                     type: "POST",
