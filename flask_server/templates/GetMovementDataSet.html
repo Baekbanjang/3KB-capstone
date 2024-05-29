@@ -67,10 +67,10 @@
 
     <!-- 여기에 버튼 추가 -->
     <div class="mode-buttons">
-        <button id="GestureModeButton" class="btn btn-primary" value="gesture">제스처 모드</button>
-        <button id="PoseModeButton" class="btn btn-secondary" value="pose">포즈 모드</button>
+        <button id="GestureModeButton" class="btn btn-primary" value="gesture">손동작 모드</button>
+        <button id="PoseModeButton" class="btn btn-secondary" value="pose">몸동작 모드</button>
     </div>
-
+    
     <!-- 프리셋 버튼 -->
     <div class="container mt-5">
         <h2>프리셋</h2>
@@ -327,8 +327,8 @@
                     posePreset = buttonValue;
                 }
                 updateButtonColors(buttonValue);
-                $('.PresetButton').removeClass('btn-success').addClass('btn-secondary');
-                $(this).removeClass('btn-secondary').addClass('btn-success');
+                $('.PresetButton').removeClass('btn-success').addClass('btn-primary');
+                $(this).removeClass('btn-primary').addClass('btn-success');
                 $.ajax({
                     url: "/Get_AllMovements",
                     type: "POST",

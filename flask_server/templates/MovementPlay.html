@@ -18,34 +18,28 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            flex-direction: column;
+            flex-direction: row;
         }
 
         .streaming-button-wrapper {
             display: flex;
+            /* Flexbox 레이아웃 적용 */
             justify-content: flex-start;
             align-items: center;
             width: 100%;
         }
 
-        #video-container {
+        .video2-right-container{
+            margin-left: auto; /* 이 컨테이너를 오른쪽으로 밀어냄 */
             display: flex;
             align-items: center;
             justify-content: center;
             flex-direction: column;
-            margin-left: 10px;
-            margin-right: 20px;
         }
-
-        #video_movement {
-            width: 600px;
-            height: auto;
-            margin-top: 20px;
-        }
-
+        
         .button-container {
             flex-direction: column;
-            margin-left: 100px;
+            margin-bottom: 20px; /* 버튼 컨테이너 아래에 여백을 줍니다 */
             gap: 15px;
         }
 
@@ -66,11 +60,45 @@
         }
 
         .metronome-container {
-            position: absolute;
-            top: 50%;
-            right: 40px;
-            transform: translate(-50%);
             text-align: center;
+        }
+
+        .metronome-container .child {
+            display: inline-block;
+            padding: 20px 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background-color: #f9f9f9;
+            width: 200px; /* 너비를 줄여서 박스 크기 감소 */
+        }
+
+        .metronome-container button {
+            margin: 5px;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        #video-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            margin-left: 10px;
+            margin-right: 20px;
+        }
+
+        #video_movement {
+            width: 600px;
+            height: auto;
+            /*margin-left: 50px;*/
+            margin-top: 20px;
+        }
+
+        #video_movement2 {
+            width: 600px;
+            height: auto;
+            /*margin-left: 50px;*/
+            margin-top: 20px;
         }
 
         #blur-background {
@@ -98,8 +126,8 @@
 
         #close-btn {
             position: absolute;
-            top: 0px; /* Adjust the position outside the video-popup */
-            right: 0px; /* Adjust the position outside the video-popup */
+            top: 5px; /* Adjust the position outside the video-popup */
+            right: 5px; /* Adjust the position outside the video-popup */
             background: red;
             color: white;
             border: none;
@@ -113,28 +141,111 @@
             z-index: 11;
         }
 
-        #video {
-            width: 600px;
-            height: 400px;
-            margin-top: 20px; /* Add some space for the close button */
-        }
-
-        #show-video-btn {
-            margin: 50px;
+        #help-btn {
             padding: 10px 20px;
             font-size: 16px;
             cursor: pointer;
+        }
+
+        .description-box {
+            display: none; /* 처음에는 숨겨져 있음 */
+            width: 200px; /* 박스의 너비 */
+            border: 1px solid #000; /* 테두리 */
+            padding: 10px; /* 내부 여백 */
+            margin-top: 5px; /* 버튼과의 거리 */
+            background-color: #f9f9f9; /* 배경색 */
+            position: absolute; /* 절대 위치 */
+        }
+
+        .container {
+            display: flex; /* Flexbox 레이아웃을 활성화합니다 */
+            flex-direction: column; /* 아이템들을 상하로 배치합니다 */
+            align-items: center; /* 아이템들을 가운데 정렬합니다 */
         }
     </style>
 </head>
 
 <body data-gesture-preset="{{ gesture_preset }}" data-pose-preset="{{ pose_preset }}">
+    <div class="streaming-button-wrapper">
+        <div id="video-container">
+            <div class="mode-button-container">
+                <!-- 도움말 코드 -->
+                <button id="show-video-btn" class="btn btn-primary" style="font-weight: bold;">동영상 설명</button>
+                <button id="GestureModeButton" class="btn btn-primary" style="font-weight: bold;" onclick="changeMode('gesture')">손동작 모드</button>
+                <button id="PoseModeButton" class="btn btn-secondary" style="font-weight: bold;" onclick="changeMode('pose')">몸동작 모드</button>
+                <div>
+                    <button id="help-btn">?</button>
+                    <div class="description-box" id="description-box">이것은 버튼에 대한 설명입니다.</div>
+                </div>
+            </div>
+
+            <div id="myDiv" style="display: none">
+                <img id="video_movement" src="" />
+            </div>
+            
+            <div>
+                <button class="btn btn-primary PresetButton" value=1>1</button>
+                <button class="btn btn-primary PresetButton" value=2>2</button>
+                <button class="btn btn-primary PresetButton" value=3>3</button>
+                <button class="btn btn-primary PresetButton" value=4>4</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="blur-background">
+        <div id="video-popup">
+            <button id="close-btn">X</button>
+            <video id="video" controls>
+                <source src="{{ url_for('static', filename='videos/1.mp4') }}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 녹화 및 정지 버튼을 가로로 정렬하기 위한 컨테이너 추가 -->
+        <div class="button-container">
+            <button id="RecordingTrueButton" class="btn large-button">
+                <i class="fas fa-circle"></i>
+            </button>
+            <button id="RecordingFalseButton" class="btn large-button">
+                <i class="fas fa-stop-circle"></i>
+            </button>
+        </div>
+        
+        <div class="metronome-container">
+            <div class="child">
+                <h2>메트로놈</h2>
+                <input type="range" min="40" max="240" value="60" onchange="setBpm(this.value)">
+                <button onclick="decreaseBpm()">-</button>
+                <span id="bpmDisplay">60</span> BPM
+                <button onclick="increaseBpm()">+</button>
+                <br>
+                <button onclick="startMetronome()">시작</button>
+                <button onclick="stopMetronome()">중지</button>
+                <!-- 오디오 파일 미리 로드 -->
+                <audio id="tickSound" src="flask_server\static\metronome_click.ogg" preload="auto"></audio>
+            </div>
+        </div>
+    </div>
+
+    <div class="streaming-button-wrapper">
+            <!-- 새로운 컨테이너 추가 -->
+    <div class="video2-right-container">
+        <div id="myDiv2" style="display: none">
+            <img id="video_movement2" src="" />
+        </div>
+    </div>
+    </div>
+
     <nav class="navbar fixed-top navbar-light bg-light">
         <a class="navbar-brand" href="#">Gesture Sound</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse"
             aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
+        <!-- 여기에 드롭다운 메뉴 추가 -->
+
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav">
                 <li class="nav-item dropdown">
@@ -146,68 +257,25 @@
                         <a class="dropdown-item" href="/Movement_play">메인 화면</a>
                         <a class="dropdown-item" href="/Instrument_choice">악기소리 설정</a>
                         <a class="dropdown-item" href="/Get_AllMovements">모션 사용자 설정</a>
-                        <a class="dropdown-item" href="/video-playlist">영상 재생 목록</a>
+                        <a class="dropdown-item" href="/Playlist">영상 재생 목록</a>
                     </div>
                 </li>
             </ul>
         </div>
     </nav>
-    <div class="streaming-button-wrapper">
-        <div id="video-container">
-            <div class="mode-button-container">
-                <button id="GestureModeButton" class="btn btn-primary" style="font-weight: bold;">제스처 모드</button>
-                <button id="PoseModeButton" class="btn btn-secondary" style="font-weight: bold;">포즈 모드</button>
-            </div>
-
-            <div id="myDiv" style="display: none">
-                <img id="video_movement" src="" />
-            </div>
-
-            <div>
-                <button class="btn btn-primary PresetButton" value=1>1</button>
-                <button class="btn btn-primary PresetButton" value=2>2</button>
-                <button class="btn btn-primary PresetButton" value=3>3</button>
-                <button class="btn btn-primary PresetButton" value=4>4</button>
-            </div>
-        </div>
-
-        <!-- 도움말 코드 -->
-        <button id="show-video-btn">?</button>
-        <div id="blur-background">
-            <div id="video-popup">
-                <button id="close-btn">X</button>
-                <video id="video" controls>
-                    <source src="{{ url_for('static', filename='videos/1.mp4') }}" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
-            </div>
-        </div>
-
-        <div class="button-container">
-            <button id="RecordingTrueButton" class="btn large-button">
-                <i class="fas fa-circle"></i>
-            </button>
-            <button id="RecordingFalseButton" class="btn large-button">
-                <i class="fas fa-stop-circle"></i>
-            </button>
-        </div>
-    </div>
-
-    <div class="metronome-container">
-        <div class="child">
-            <h2>메트로놈</h2>
-            <input type="range" min="40" max="240" value="60" onchange="setBpm(this.value)">
-            <button onclick="decreaseBpm()">-</button>
-            <span id="bpmDisplay">60</span> BPM
-            <button onclick="increaseBpm()">+</button>
-            <br>
-            <button onclick="startMetronome()">시작</button>
-            <button onclick="stopMetronome()">중지</button>
-            <audio id="tickSound" src="/static/metronome_click.ogg" preload="auto"></audio>
-        </div>
-    </div>
 
     <script>
+         function changeMode(mode) {
+            var content = document.getElementById('content');
+            if (mode === 'pose') {
+                content.className = 'poseMode';
+                // 포즈 모드용 CSS 파일 로드 또는 스타일 적용
+            } else if (mode === 'gesture') {
+                content.className = 'gestureMode';
+                // 제스처 모드용 CSS 파일 로드 또는 스타일 적용
+            }
+        }
+
         function updateButtonColors(preset) {
             const buttons = document.querySelectorAll('.PresetButton');
             buttons.forEach(button => {
@@ -220,6 +288,7 @@
                 activeButton.classList.add('btn-success');
             }
         }
+
         document.addEventListener('DOMContentLoaded', function () {
             const gestureModeButton = document.getElementById('GestureModeButton');
             const poseModeButton = document.getElementById('PoseModeButton');
@@ -240,6 +309,9 @@
 
                 document.getElementById('video_movement').src = "{{ url_for('processed_video_gesture') }}";
                 updateButtonColors(gesturePreset);
+
+                $('#video_movement').attr('src', "{{ url_for('processed_video_gesture') }}");
+                $('#video_movement2').show()
             });
 
             poseModeButton.addEventListener('click', function () {
@@ -253,23 +325,36 @@
 
                 document.getElementById('video_movement').src = "{{ url_for('processed_video_pose') }}";
                 updateButtonColors(posePreset);
+
+                $('#video_movement').attr('src', "{{ url_for('processed_video_pose') }}");
+                $('#video_movement2').hide()
             });
         });
 
-        let bpm = 60;
+        //도움말 코드
+        document.getElementById('show-video-btn').addEventListener('click', function() {
+            document.getElementById('blur-background').style.display = 'flex';
+        });
+
+        document.getElementById('close-btn').addEventListener('click', function() {
+            document.getElementById('blur-background').style.display = 'none';
+        });
+
+        // 메트로놈 script
+        let bpm = 60; // 기본 박자를 60으로 설정
         let intervalId;
 
         function playTickSound() {
             const sound = document.getElementById('tickSound');
-            sound.currentTime = 0;
+            sound.currentTime = 0; // 소리 파일을 시작 위치로 재설정
             sound.play();
         }
 
         function startMetronome() {
             if (intervalId) {
-                clearInterval(intervalId);
+                clearInterval(intervalId); // 이미 실행 중인 타이머가 있다면 중지
             }
-            const ms = 60000 / bpm;
+            const ms = 60000 / bpm; // 분당 박자수를 밀리초 단위 간격으로 변환
             intervalId = setInterval(playTickSound, ms);
         }
 
@@ -286,31 +371,52 @@
         function decreaseBpm() {
             setBpm(parseInt(document.getElementById('bpmDisplay').innerText) - 1);
         }
-
         function setBpm(newBpm) {
             bpm = newBpm;
             document.getElementById('bpmDisplay').innerText = bpm;
-            startMetronome();
+            startMetronome(); // BPM을 변경할 때 메트로놈을 재시작
         }
 
         $(document).ready(function () {
+            let metronomeInterval;
+            let isMetronomePlaying = false;
+
+            // 페이지 로딩 시 자동으로 화면 띄우기
+            $('#myDiv').show();
+            $('#myDiv2').show();
+            $('#video_movement').attr('src', "{{ url_for('processed_video_gesture') }}");
+            $('#video_movement2').attr('src', "{{ url_for('processed_video_gesture_2') }}");
+
+        // jQuery를 사용하여 이벤트 핸들러 설정
+        $("#help-btn").click(function() {
+            // 버튼의 위치와 크기를 가져옴
+            var offset = $(this).offset();
+            var height = $(this).outerHeight();
+            
+            // 설명 박스를 버튼 바로 아래에 위치시킴
+            $("#description-box").css({
+                top: offset.top + height,
+                left: offset.left
+            }).toggle();
+        });
+
             // 초기 프리셋 값에 따라 버튼 색 변경
             $('.PresetButton').each(function() {
                 if ($(this).val() == gesturePreset) {
                     $(this).removeClass('btn-primary').addClass('btn-success');
                 }
             });
-            $('#myDiv').show();
-            $('#video_movement').attr('src', "{{ url_for('processed_video_gesture') }}");
 
+            // 녹화 시작/정지 버튼 이벤트
             $('#RecordingTrueButton').click(function () {
                 $.ajax({
                     url: "/Movement_play",
                     type: "POST",
-                    data: { isRecording: "True"},
+                    data: { isRecording: "True" },
                     success: function (response) {
                         console.log("성공:", response);
                         $('#myDiv').show();
+                        $('#myDiv2').show();
                     },
                     error: function (error) {
                         console.log("오류:", error);
@@ -322,7 +428,7 @@
                 $.ajax({
                     url: "/Movement_play",
                     type: "POST",
-                    data: { isRecording: "False"},
+                    data: { isRecording: "False" },
                     success: function (response) {
                         console.log("성공:", response);
                     },
@@ -332,9 +438,10 @@
                 });
             });
 
-            $('.PresetButton').click(function () {
+            $('.PresetButton').click(function() {
                 var buttonValue = $(this).val();
                 console.log("버튼 값:", buttonValue);
+
                 if (currentMode === 'gesture') {
                     gesturePreset = buttonValue;
                 } else if (currentMode === 'pose') {
@@ -343,10 +450,11 @@
                 updateButtonColors(buttonValue);
                 $('.PresetButton').removeClass('btn-success').addClass('btn-primary');
                 $(this).removeClass('btn-primary').addClass('btn-success');
+
                 $.ajax({
                     url: "/Movement_play",
                     type: "POST",
-                    data: {preset: buttonValue, mode: currentMode},
+                    data: {preset: buttonValue},
                     success: function(response) {
                         console.log("성공:", response);
                     },
@@ -365,6 +473,7 @@
         document.getElementById('close-btn').addEventListener('click', function() {
             document.getElementById('blur-background').style.display = 'none';
         });
+
     </script>
 </body>
 

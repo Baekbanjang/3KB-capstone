@@ -27,23 +27,26 @@ db = client["record_videos"]
 fs = GridFS(db)
 fs_files_collection = db['fs.files']  # GridFS의 메타데이터 컬렉션
 
-# 비디오 녹화를 위한 설정. XVID 코덱을 사용
-fourcc = cv2.VideoWriter_fourcc(*'XVID')
+# 비디오 녹화를 위한 설정.
+fourcc = cv2.VideoWriter_fourcc(*'avc1')
 
 cap = cv2.VideoCapture(0, cv2.CAP_MSMF)
+cap2 = cv2.VideoCapture(1, cv2.CAP_MSMF)
 
 width, height = (640, 480)
 set_fps = 30
 
 # 해상도 설정
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-cap.set(cv2.CAP_PROP_FPS, set_fps)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, width), cap2.set(cv2.CAP_PROP_FRAME_WIDTH, width) 
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height), cap2.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+cap.set(cv2.CAP_PROP_FPS, set_fps), cap2.set(cv2.CAP_PROP_FPS, set_fps)
 
 sort_by = 'name'
 sort_direction = 'asc'
 
 pygame.init()
+pygame.mixer.init()
+pygame.mixer.set_num_channels(16)
 gesture_code = None
 pose_code = None
 isStop = False
@@ -106,7 +109,7 @@ def get_sorted_videos(sort_by, sort_direction):
 
 def update_current_time():
     global current_time, date_time
-      # 현재 시간을 글로벌 변수인 current_time에 저장. 현재 시간을 "%Y-%m-%d_%H-%M-%S"의 형식으로 포맷.
+      # 현재 시간을 글로벌 변수인 date_time, current_time에 저장. 현재 시간을 "%Y-%m-%d_%H-%M-%S"의 형식으로 포맷.
     date_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
@@ -226,6 +229,7 @@ def get_gesture_set():
 
     # MediaPipe hands model
     mp_hands = mp.solutions.hands
+    mp_drawing = mp.solutions.drawing_utils
     hands = mp_hands.Hands(
         max_num_hands=max_num_hands,
         min_detection_confidence=0.5,
@@ -245,6 +249,7 @@ def get_gesture_set():
 
         if result.multi_hand_landmarks is not None:
             for res in result.multi_hand_landmarks:
+                mp_drawing.draw_landmarks(img,res,mp_hands.HAND_CONNECTIONS)
                 joint = np.zeros((33, 3))
                 for j, lm in enumerate(res.landmark):
                     joint[j] = [lm.x, lm.y, lm.z]
@@ -281,7 +286,7 @@ def get_pose_set():
     if os.path.exists('data/pose/'+ pose_preset +'/pose_angle_train_'+ code[pose_code] + '.csv') and os.path.getsize('data/pose/'+ pose_preset +'/pose_angle_train_'+ code[pose_code] + '.csv') > 0:
         file = np.genfromtxt('data/pose/'+ pose_preset +'/pose_angle_train_'+ code[pose_code] + '.csv', delimiter=',')
     else:
-        file = np.empty((0, 9))
+        file = np.empty((0,17))
     # MediaPipe pose 모델 초기화
     mp_pose = mp.solutions.pose
     mp_drawing = mp.solutions.drawing_utils
@@ -311,6 +316,14 @@ def get_pose_set():
                 calculateAngle(landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value], landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value], landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value]),
                 calculateAngle(landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value], landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value], landmarks[mp_pose.PoseLandmark.LEFT_PINKY.value]),
                 calculateAngle(landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value], landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value], landmarks[mp_pose.PoseLandmark.RIGHT_PINKY.value]),
+                calculateAngle(landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value], landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value], landmarks[mp_pose.PoseLandmark.LEFT_HIP.value]),
+                calculateAngle(landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value], landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value], landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value]),
+                calculateAngle(landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value], landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value], landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value]),
+                calculateAngle(landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value], landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value], landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value]),
+                calculateAngle(landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value], landmarks[mp_pose.PoseLandmark.LEFT_HIP.value], landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value]),
+                calculateAngle(landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value], landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value], landmarks[mp_pose.PoseLandmark.LEFT_HIP.value]),
+                calculateAngle(landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value], landmarks[mp_pose.PoseLandmark.LEFT_HIP.value], landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value]),
+                calculateAngle(landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value], landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value], landmarks[mp_pose.PoseLandmark.LEFT_HIP.value]),
                 calculateAngle(landmarks[mp_pose.PoseLandmark.LEFT_HIP.value], landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value], landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value]),
                 calculateAngle(landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value], landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value], landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value]),
                 calculateAngle(landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value], landmarks[mp_pose.PoseLandmark.LEFT_HIP.value], landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value]),
@@ -385,6 +398,8 @@ def gesture_gen():
 
     temp_idx = None
 
+    current_channel=None
+
     while cap.isOpened():
         if gesture_preset != current_preset:
             current_preset = gesture_preset
@@ -431,15 +446,24 @@ def gesture_gen():
                     ret, results, neighbours, dist = knn.findNearest(data, 3)
                     idx = int(results[0][0])
                     if temp_idx != idx :
+                        if current_channel:
+                            current_channel.stop()
                         temp_idx = idx
-                        pygame.mixer.stop()
+                        channel_number = idx % 8  # 0에서 7까지의 채널 사용
+                        current_channel = pygame.mixer.Channel(channel_number)
+
+                        if current_channel is None:
+                            current_channel = pygame.mixer.Channel(idx)
+
+                        current_channel.stop()
+                        
                         if idx in sounds:
                             sound = sounds[idx]
                             sound.set_volume(0.3)
-                            sound.play()
+                            current_channel.play(sound)
                         elif idx == 13:
-                            if pygame.mixer.music.get_busy():
-                                pygame.mixer.music.stop()
+                            pygame.mixer.music.stop()
+                        temp_idx = idx
         if isRecording:
             out.write(img)
         # 프레임에 주사율 표시
@@ -448,6 +472,130 @@ def gesture_gen():
         frame = jpeg.tobytes()
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+        
+# 웹캠
+def gesture_gen_2():
+    global gesture_preset, sounds, isRecording, out, height, width, fps
+    file_path = 'data/gesture/' + gesture_preset + '/gesture_train.csv'
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+    # data 폴더에 있는 데이터셋들 취합
+    file_list = glob.glob('data/gesture/' + gesture_preset + '/' + '*')
+    with open('data/gesture/' + gesture_preset + '/gesture_train.csv', 'w') as f:  # 2-1.merge할 파일을 열고
+        for file in file_list:
+            with open(file, 'r') as f2:
+                while True:
+                    line = f2.readline()  # 2.merge 대상 파일의 row 1줄을 읽어서
+
+                    if not line:  # row가 없으면 해당 csv 파일 읽기 끝
+                        break
+
+                    f.write(line)  # 3.읽은 row 1줄을 merge할 파일에 쓴다.
+
+    # Gesture recognition model
+    if os.path.exists('data/gesture/' + gesture_preset + '/gesture_train.csv') and os.path.getsize('data/gesture/' + gesture_preset + '/gesture_train.csv') > 0:
+        file = np.genfromtxt('data/gesture/' +
+                             gesture_preset + '/gesture_train.csv', delimiter=',')
+    else:
+        file = np.empty((0, 16))
+    angle = file[:, :-1].astype(np.float32)
+    label = file[:, -1].astype(np.float32)
+    knn = cv2.ml.KNearest_create()
+    knn.train(angle, cv2.ml.ROW_SAMPLE, label)
+
+    max_num_hands = 1
+
+    frame_count = 0
+    start_time = time.time()  # 시작 시간 기록
+
+    # MediaPipe hands model
+    mp_hands = mp.solutions.hands
+    mp_drawing = mp.solutions.drawing_utils
+    hands = mp_hands.Hands(
+        max_num_hands=max_num_hands,
+        min_detection_confidence=0.5,
+        min_tracking_confidence=0.5)
+
+    temp_idx = None
+    current_channel = None
+
+    while cap2.isOpened():
+        ret2, img2 = cap2.read()
+        if not ret2:
+            continue
+
+        frame_count += 1
+        current_time = time.time() - start_time  # 현재 경과된 시간 계산
+        fps = round(frame_count / current_time)  # 현재 주사율 계산
+
+        img2 = cv2.flip(img2, 1)
+        img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
+
+        result = hands.process(img2)
+
+        img2 = cv2.cvtColor(img2, cv2.COLOR_RGB2BGR)
+
+        if result.multi_hand_landmarks is not None:
+            for res in result.multi_hand_landmarks:
+                mp_drawing.draw_landmarks(img2, res, mp_hands.HAND_CONNECTIONS)
+                joint = np.zeros((21, 3))
+                for j, lm in enumerate(res.landmark):
+                    joint[j] = [lm.x, lm.y, lm.z]
+
+                # Compute angles between joints
+                v1 = joint[[0, 1, 2, 3, 0, 5, 6, 7, 0, 9, 10, 11, 0,
+                            13, 14, 15, 0, 17, 18, 19], :]  # Parent joint
+                v2 = joint[[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+                            13, 14, 15, 16, 17, 18, 19, 20], :]  # Child joint
+                v = v2 - v1  # [20,3]
+                # Normalize v
+                v = v / np.linalg.norm(v, axis=1)[:, np.newaxis]
+
+                # Get angle using arcos of dot product
+                angle = np.arccos(np.einsum('nt,nt->n',
+                                            v[[0, 1, 2, 4, 5, 6, 8, 9, 10,
+                                                12, 13, 14, 16, 17, 18], :],
+                                            v[[1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15, 17, 18, 19], :]))  # [15,]
+
+                angle = np.degrees(angle)  # Convert radian to degree
+
+                # Inference gesture
+                data = np.array([angle], dtype=np.float32)
+                ret2, results, neighbours, dist = knn.findNearest(data, 3)
+                idx = int(results[0][0])
+
+                if temp_idx != idx:
+                    if current_channel:
+                        current_channel.stop()
+
+                    channel_number = 8 + (idx % 8)  # 8에서 15까지의 채널 사용
+                    current_channel = pygame.mixer.Channel(channel_number)
+
+                    if current_channel is None:
+                        current_channel = pygame.mixer.Channel(idx + 8)
+
+                    current_channel.stop()
+
+                    if idx in sounds:
+                        sound = sounds[idx]
+                        sound.set_volume(0.3)
+                        current_channel.play(sound)
+                    elif idx == 13:
+                        pygame.mixer.music.stop()
+
+                    temp_idx = idx
+
+        if isRecording:
+            out.write(img2)
+
+        # 프레임에 주사율 표시
+        cv2.putText(img2, f"FPS: {fps}", (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        ret2, jpeg = cv2.imencode('.jpg', img2)
+        frame2 = jpeg.tobytes()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame2 + b'\r\n')
 
 def pose_gen():
     global pose_preset, sounds, isRecording, out, height, width, fps
@@ -476,7 +624,7 @@ def pose_gen():
         if os.path.exists('data/pose/'+ preset +'/pose_angle_train.csv') and os.path.getsize('data/pose/'+ preset +'/pose_angle_train.csv') > 0:
             file = np.genfromtxt('data/pose/'+ preset +'/pose_angle_train.csv', delimiter=',')
         else:
-            file = np.empty((0, 9))
+            file = np.empty((0, 17))
             return None
 
         coordinate=file[:,:-1].astype(np.float32) # 각도 데이터
@@ -528,13 +676,21 @@ def pose_gen():
             angle2 = calculateAngle(landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value], landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value], landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value])
             angle3 = calculateAngle(landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value], landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value], landmarks[mp_pose.PoseLandmark.LEFT_PINKY.value])
             angle4 = calculateAngle(landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value], landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value], landmarks[mp_pose.PoseLandmark.RIGHT_PINKY.value])
-            angle5 = calculateAngle(landmarks[mp_pose.PoseLandmark.LEFT_HIP.value], landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value], landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value])
-            angle6 = calculateAngle(landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value], landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value], landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value])
-            angle7 = calculateAngle(landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value], landmarks[mp_pose.PoseLandmark.LEFT_HIP.value], landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value])
-            angle8 = calculateAngle(landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value], landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value], landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value])
+            angle5 = calculateAngle(landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value], landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value], landmarks[mp_pose.PoseLandmark.LEFT_HIP.value])
+            angle6 = calculateAngle(landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value], landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value], landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value])
+            angle7 = calculateAngle(landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value], landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value], landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value])
+            angle8 = calculateAngle(landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value], landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value], landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value])
+            angle9 = calculateAngle(landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value], landmarks[mp_pose.PoseLandmark.LEFT_HIP.value], landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value])
+            angle10 = calculateAngle(landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value], landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value], landmarks[mp_pose.PoseLandmark.LEFT_HIP.value])
+            angle11 = calculateAngle(landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value], landmarks[mp_pose.PoseLandmark.LEFT_HIP.value], landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value])
+            angle12 = calculateAngle(landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value], landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value], landmarks[mp_pose.PoseLandmark.LEFT_HIP.value])
+            angle13 = calculateAngle(landmarks[mp_pose.PoseLandmark.LEFT_HIP.value], landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value], landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value])
+            angle14 = calculateAngle(landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value], landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value], landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value])
+            angle15 = calculateAngle(landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value], landmarks[mp_pose.PoseLandmark.LEFT_HIP.value], landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value])
+            angle16 = calculateAngle(landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value], landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value], landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value])
 
             # 각도 데이터를 배열에 저장
-            pose_array = np.array([angle1, angle2, angle3, angle4, angle5, angle6, angle7, angle8])  # 각도 계산 결과를 배열에 추가. 필요한 각도 수에 맞게 조정하세요.
+            pose_array = np.array([angle1, angle2, angle3, angle4, angle5, angle6, angle7, angle8, angle9, angle10, angle11, angle12, angle13, angle14, angle15, angle16])  # 각도 계산 결과를 배열에 추가. 필요한 각도 수에 맞게 조정하세요.
             pose_array = pose_array.reshape((1, -1)).astype(np.float32)  # KNN 모델에 입력하기 위한 형태로 변환
 
             if knn is not None :
@@ -661,7 +817,7 @@ def instrument_choice():
 @app.route('/video-playlist')   
 def playlist():
     global sort_by, sort_direction
-    sort_by = 'name'
+    sort_by = 'creationDate'
     sort_direction = 'asc'
     # MongoDB에서 영상 리스트 가져오기
     videolist = list(fs.find())  # GridFS에서 모든 파일을 조회
@@ -723,6 +879,11 @@ def processed_video_gesture():
     return Response(gesture_gen(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
+@app.route('/processed_video_gesture_2')
+def processed_video_gesture_2():
+    return Response(gesture_gen_2(),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
+
 @app.route('/processed_video_pose')
 def processed_video_pose():
     return Response(pose_gen(),
@@ -746,7 +907,6 @@ def get_music_files(instrument_code):
     music_dir = os.path.join('instrument', instrument_dir)
     files = [f for f in os.listdir(music_dir) if f.endswith('.ogg')]
     return jsonify(files)
-
 @app.route('/music/<instrument_code>/<filename>')
 def serve_music_file(instrument_code, filename):
     instrument_dir = instrument.get(instrument_code)
