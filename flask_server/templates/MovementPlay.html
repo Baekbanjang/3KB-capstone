@@ -18,7 +18,7 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            flex-direction: column;
+            flex-direction: row;
         }
 
         .streaming-button-wrapper {
@@ -29,22 +29,14 @@
             width: 100%;
         }
 
-        #video-container {
+        .video2-right-container{
+            margin-left: auto; /* 이 컨테이너를 오른쪽으로 밀어냄 */
             display: flex;
             align-items: center;
             justify-content: center;
             flex-direction: column;
-            margin-left: 10px;
-            margin-right: 20px;
         }
-
-        #video_movement {
-            width: 600px;
-            height: auto;
-            /*margin-left: 50px;*/
-            margin-top: 20px;
-        }
-
+        
         .button-container {
             flex-direction: column;
             margin-left: 100px;
@@ -74,19 +66,104 @@
             transform: translate(-50%);
             text-align: center; /* 내용을 가운데 정렬 */
         }
+
+        #video-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            margin-left: 10px;
+            margin-right: 20px;
+        }
+
+        #video_movement {
+            width: 600px;
+            height: auto;
+            /*margin-left: 50px;*/
+            margin-top: 20px;
+        }
+
+        #video_movement2 {
+            width: 600px;
+            height: auto;
+            /*margin-left: 50px;*/
+            margin-top: 20px;
+        }
+
+        #blur-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent effect */
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        #video-popup {
+            position: relative;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #close-btn {
+            position: absolute;
+            top: 0px; /* Adjust the position outside the video-popup */
+            right: 0px; /* Adjust the position outside the video-popup */
+            background: red;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 11;
+        }
+
+        #show-video-btn {
+            margin: 50px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        
     </style>
 </head>
 
-<body>
+<body data-gesture-preset="{{ gesture_preset }}" data-pose-preset="{{ pose_preset }}">
     <div class="streaming-button-wrapper">
         <div id="video-container">
             <div class="mode-button-container">
-                <button id="GestureModeButton" class="btn btn-primary" style="font-weight: bold;">제스처 모드</button>
-                <button id="PoseModeButton" class="btn btn-secondary" style="font-weight: bold;">포즈 모드</button>
+                <button id="GestureModeButton" class="btn btn-primary" style="font-weight: bold;" onclick="changeMode('gesture')">제스처 모드</button>
+                <button id="PoseModeButton" class="btn btn-secondary" style="font-weight: bold;" onclick="changeMode('pose')">포즈 모드</button>
             </div>
 
             <div id="myDiv" style="display: none">
                 <img id="video_movement" src="" />
+            </div>
+        </div>
+
+
+        <!-- 도움말 코드 -->
+        <button id="show-video-btn">?</button>
+        <div id="blur-background">
+            <div id="video-popup">
+                <button id="close-btn">X</button>
+                <video id="video" controls>
+                    <source src="{{ url_for('static', filename='videos/1.mp4') }}" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
             </div>
         </div>
 
@@ -101,6 +178,20 @@
         </div>
     </div>
 
+    <!-- 새로운 컨테이너 추가 -->
+    <div class="video2-right-container">
+        <div id="myDiv2" style="display: none">
+            <img id="video_movement2" src="" />
+        </div>
+    </div>
+
+    <div>
+        <button class="PresetButton" value=1>1</button>
+        <button class="PresetButton" value=2>2</button>
+        <button class="PresetButton" value=3>3</button>
+        <button class="PresetButton" value=4>4</button>
+    </div>
+
     <div class="metronome-container">
         <div class="child">
             <h2>메트로놈</h2>
@@ -112,7 +203,7 @@
             <button onclick="startMetronome()">시작</button>
             <button onclick="stopMetronome()">중지</button>
             <!-- 오디오 파일 미리 로드 -->
-            <audio id="tickSound" src="/flask_server/static/metronome_click.ogg" preload="auto"></audio>
+            <audio id="tickSound" src="flask_server\static\metronome_click.ogg" preload="auto"></audio>
         </div>
     </div>
 
@@ -135,7 +226,7 @@
                         <a class="dropdown-item" href="/Movement_play">메인 화면</a>
                         <a class="dropdown-item" href="/Instrument_choice">악기소리 설정</a>
                         <a class="dropdown-item" href="/Get_AllMovements">모션 사용자 설정</a>
-                        <a class="dropdown-item" href="/video-playlist">영상 재생 목록</a>
+                        <a class="dropdown-item" href="/Playlist">영상 재생 목록</a>
                     </div>
                 </li>
             </ul>
@@ -143,9 +234,38 @@
     </nav>
 
     <script>
+         function changeMode(mode) {
+            var content = document.getElementById('content');
+            if (mode === 'pose') {
+                content.className = 'poseMode';
+                // 포즈 모드용 CSS 파일 로드 또는 스타일 적용
+            } else if (mode === 'gesture') {
+                content.className = 'gestureMode';
+                // 제스처 모드용 CSS 파일 로드 또는 스타일 적용
+            }
+        }
+
+        function updateButtonColors(preset) {
+            const buttons = document.querySelectorAll('.PresetButton');
+            buttons.forEach(button => {
+                button.classList.remove('btn-success');
+                button.classList.add('btn-primary');
+            });
+            const activeButton = document.querySelector('.PresetButton[value="' + preset + '"]');
+            if (activeButton) {
+                activeButton.classList.remove('btn-primary');
+                activeButton.classList.add('btn-success');
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             const gestureModeButton = document.getElementById('GestureModeButton');
             const poseModeButton = document.getElementById('PoseModeButton');
+            const closeButton = document.getElementById('close-btn');
+            const showVideoButton = document.getElementById('show-video-btn');
+            gesturePreset = document.body.getAttribute('data-gesture-preset');
+            posePreset = document.body.getAttribute('data-pose-preset');
+            currentMode = 'gesture'; // 기본 모드를 'gesture'로 설정
 
             gestureModeButton.addEventListener('click', function () {
                 gestureModeButton.classList.add('btn-primary');
@@ -154,7 +274,13 @@
                 poseModeButton.classList.add('btn-secondary');
                 poseModeButton.classList.remove('btn-primary');
 
+                currentMode = 'gesture'; // 제스처 모드 선택 시
+
+                document.getElementById('video_movement').src = "{{ url_for('processed_video_gesture') }}";
+                updateButtonColors(gesturePreset);
+
                 $('#video_movement').attr('src', "{{ url_for('processed_video_gesture') }}");
+                $('#video_movement2').show()
             });
 
             poseModeButton.addEventListener('click', function () {
@@ -164,8 +290,23 @@
                 gestureModeButton.classList.add('btn-secondary');
                 gestureModeButton.classList.remove('btn-primary');
 
+                currentMode = 'pose'; // 제스처 모드 선택 시
+
+                document.getElementById('video_movement').src = "{{ url_for('processed_video_pose') }}";
+                updateButtonColors(posePreset);
+
                 $('#video_movement').attr('src', "{{ url_for('processed_video_pose') }}");
+                $('#video_movement2').hide()
             });
+        });
+
+        //도움말 코드
+        document.getElementById('show-video-btn').addEventListener('click', function() {
+            document.getElementById('blur-background').style.display = 'flex';
+        });
+
+        document.getElementById('close-btn').addEventListener('click', function() {
+            document.getElementById('blur-background').style.display = 'none';
         });
 
         // 메트로놈 script
@@ -211,7 +352,9 @@
 
             // 페이지 로딩 시 자동으로 화면 띄우기
             $('#myDiv').show();
+            $('#myDiv2').show();
             $('#video_movement').attr('src', "{{ url_for('processed_video_gesture') }}");
+            $('#video_movement2').attr('src', "{{ url_for('processed_video_gesture_2') }}");
 
             // 녹화 시작/정지 버튼 이벤트
             $('#RecordingTrueButton').click(function () {
@@ -222,6 +365,7 @@
                     success: function (response) {
                         console.log("성공:", response);
                         $('#myDiv').show();
+                        $('#myDiv2').show();
                     },
                     error: function (error) {
                         console.log("오류:", error);
@@ -242,7 +386,43 @@
                     }
                 });
             });
+
+            $('.PresetButton').click(function() {
+                var buttonValue = $(this).val();
+                console.log("버튼 값:", buttonValue);
+
+                if (currentMode === 'gesture') {
+                    gesturePreset = buttonValue;
+                } else if (currentMode === 'pose') {
+                    posePreset = buttonValue;
+                }
+                updateButtonColors(buttonValue);
+                $('.PresetButton').removeClass('btn-success').addClass('btn-primary');
+                $(this).removeClass('btn-primary').addClass('btn-success');
+
+                $.ajax({
+                    url: "/Movement_play",
+                    type: "POST",
+                    data: {preset: buttonValue},
+                    success: function(response) {
+                        console.log("성공:", response);
+                    },
+                    error: function(error) {
+                        console.log("오류:", error);
+                    }
+                });
+            });
         });
+
+        //도움말 코드
+        document.getElementById('show-video-btn').addEventListener('click', function() {
+            document.getElementById('blur-background').style.display = 'flex';
+        });
+
+        document.getElementById('close-btn').addEventListener('click', function() {
+            document.getElementById('blur-background').style.display = 'none';
+        });
+
     </script>
 </body>
 
