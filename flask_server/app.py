@@ -28,7 +28,7 @@ fs = GridFS(db)
 fs_files_collection = db['fs.files']  # GridFS의 메타데이터 컬렉션
 
 # 비디오 녹화를 위한 설정.
-fourcc = cv2.VideoWriter_fourcc(*'avc1')
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
 
 cap = cv2.VideoCapture(0, cv2.CAP_MSMF)
 cap2 = cv2.VideoCapture(1, cv2.CAP_MSMF)
@@ -146,6 +146,32 @@ def record_audio():
     wf.writeframes(b''.join(frames))
     wf.close()
     frames = [] # 오디오 프레임 데이터를 초기화
+
+#2개의 영상을 가로로 합치는 함수
+def merge_videos_horizontally(input_video1, input_video2, output_video):
+    # FFmpeg 명령어 구성
+    command = [
+        'ffmpeg',
+        '-i', input_video1,
+        '-i', input_video2,
+        '-c:v', 'libx264',
+        '-filter_complex', '[0:v][1:v]hstack=inputs=2[v]',
+        '-map', '[v]',
+        output_video
+    ]
+
+    try:
+        # subprocess를 사용하여 명령어 실행
+        subprocess.run(command, check=True)
+        print(f"비디오 병합이 성공적으로 완료되었습니다: {output_video}")
+        os.remove(input_video1)
+        os.remove(input_video2)
+    except subprocess.CalledProcessError as e:
+        print(f"명령어 실행 중 에러가 발생했습니다: {e}")
+    except FileNotFoundError:
+        print("FFmpeg가 설치되어 있지 않거나 시스템의 PATH에 추가되어 있지 않습니다.")
+    except Exception as e:
+        print(f"예상치 못한 에러가 발생했습니다: {e}")
 
 # 오디오 파일과 비디오 파일을 병합하는 함수
 def merge_audio_video(video_file, audio_file, output_file): # 오디오, 비디오 파일 병합 함수
@@ -475,7 +501,7 @@ def gesture_gen():
         
 # 웹캠
 def gesture_gen_2():
-    global gesture_preset, sounds, isRecording, out, height, width, fps
+    global gesture_preset, sounds, isRecording, out2, height, width, fps
     file_path = 'data/gesture/' + gesture_preset + '/gesture_train.csv'
     if os.path.exists(file_path):
         os.remove(file_path)
@@ -587,7 +613,7 @@ def gesture_gen_2():
                     temp_idx = idx
 
         if isRecording:
-            out.write(img2)
+            out2.write(img2)
 
         # 프레임에 주사율 표시
         cv2.putText(img2, f"FPS: {fps}", (10, 30),
@@ -776,7 +802,7 @@ def process_movement_data():
 
 @app.route('/Movement_play', methods=['GET', 'POST'])
 def hand_gestures_play():
-    global instrument_code, gesture_preset, pose_preset, isRecording, fourcc, out, audio_recording_thread, current_time, fps, width, height
+    global instrument_code, gesture_preset, pose_preset, isRecording, fourcc, out, out2, audio_recording_thread, current_time, fps, width, height
     if request.method == 'POST':
         mode = request.form.get('mode')
         if (mode == "gesture"):
@@ -790,7 +816,8 @@ def hand_gestures_play():
         if 'isRecording' in request.form:
             if(request.form['isRecording'] == 'True') :
                 update_current_time()
-                out = cv2.VideoWriter(f"{output_directory}/output_{current_time}.avi", fourcc, fps, (width, height))
+                out = cv2.VideoWriter(f"{output_directory}/output_{current_time}_left.avi", fourcc, fps, (width, height))
+                out2 = cv2.VideoWriter(f"{output_directory}/output_{current_time}_right.avi", fourcc, fps, (width, height))
                 isRecording = True
                 audio_recording_thread = threading.Thread(target=record_audio)
                 audio_recording_thread.start()
@@ -799,6 +826,8 @@ def hand_gestures_play():
                 isRecording = None
                 audio_recording_thread.join()
                 out.release()
+                out2.release()
+                merge_videos_horizontally(f"{output_directory}/output_{current_time}_left.avi", f"{output_directory}/output_{current_time}_right.avi", f"{output_directory}/output_{current_time}.avi")
                 merge_audio_video(f"{output_directory}/output_{current_time}.avi", 
                                 f"{output_directory}/output_{current_time}.wav", f"final_output_{current_time}.mp4")
                 return render_template('MovementPlay.html', message="녹화를 종료합니다.")
