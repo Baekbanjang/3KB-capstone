@@ -76,7 +76,7 @@
                             <a class="dropdown-item" href="/Movement_play">메인 화면</a>
                             <a class="dropdown-item" href="/Instrument_choice">악기소리 설정</a>
                             <a class="dropdown-item" href="/Get_AllMovements">모션 사용자 설정</a>
-                            <a class="dropdown-item" href="/video-playlist">영상 재생 목록</a>
+                            <a class="dropdown-item" href="/Playlist">영상 재생 목록</a>
                         </div>
                     </li>
                 </ul>
@@ -96,15 +96,15 @@
                                 <div class="arrows">
                                     {% if sort_by == 'name' %}
                                         {% if sort_direction == 'asc' %}
-                                            <a href="/video-playlist/name/asc">▲</a>
-                                            <a href="/video-playlist/name/desc">▽</a>
+                                            <a href="/Playlist/name/asc">▲</a>
+                                            <a href="/Playlist/name/desc">▽</a>
                                         {% else %}
-                                            <a href="/video-playlist/name/asc">△</a>
-                                            <a href="/video-playlist/name/desc">▼</a>
+                                            <a href="/Playlist/name/asc">△</a>
+                                            <a href="/Playlist/name/desc">▼</a>
                                         {% endif %}
                                     {% else %}
-                                        <a href="/video-playlist/name/asc">△</a>
-                                        <a href="/video-playlist/name/desc">▽</a>
+                                        <a href="/Playlist/name/asc">△</a>
+                                        <a href="/Playlist/name/desc">▽</a>
                                     {% endif %}
                                 </div>
                             </div>
@@ -115,15 +115,15 @@
                                 <div class="arrows">
                                     {% if sort_by == 'creationDate' %}
                                         {% if sort_direction == 'asc' %}
-                                            <a href="/video-playlist/creationDate/asc">▲</a>
-                                            <a href="/video-playlist/creationDate/desc">▽</a>
+                                            <a href="/Playlist/creationDate/asc">▲</a>
+                                            <a href="/Playlist/creationDate/desc">▽</a>
                                         {% else %}
-                                            <a href="/video-playlist/creationDate/asc">△</a>
-                                            <a href="/video-playlist/creationDate/desc">▼</a>
+                                            <a href="/Playlist/creationDate/asc">△</a>
+                                            <a href="/Playlist/creationDate/desc">▼</a>
                                         {% endif %}
                                     {% else %}
-                                        <a href="/video-playlist/creationDate/asc">△</a>
-                                        <a href="/video-playlist/creationDate/desc">▽</a>
+                                        <a href="/Playlist/creationDate/asc">△</a>
+                                        <a href="/Playlist/creationDate/desc">▽</a>
                                     {% endif %}
                                 </div>
                             </div>
@@ -134,15 +134,15 @@
                                 <div class="arrows">
                                     {% if sort_by == 'length' %}
                                         {% if sort_direction == 'asc' %}
-                                            <a href="/video-playlist/length/asc">▲</a>
-                                            <a href="/video-playlist/length/desc">▽</a>
+                                            <a href="/Playlist/length/asc">▲</a>
+                                            <a href="/Playlist/length/desc">▽</a>
                                         {% else %}
-                                            <a href="/video-playlist/length/asc">△</a>
-                                            <a href="/video-playlist/length/desc">▼</a>
+                                            <a href="/Playlist/length/asc">△</a>
+                                            <a href="/Playlist/length/desc">▼</a>
                                         {% endif %}
                                     {% else %}
-                                        <a href="/video-playlist/length/asc">△</a>
-                                        <a href="/video-playlist/length/desc">▽</a>
+                                        <a href="/Playlist/length/asc">△</a>
+                                        <a href="/Playlist/length/desc">▽</a>
                                     {% endif %}
                                 </div>
                             </div>
@@ -153,15 +153,15 @@
                                 <div class="arrows">
                                     {% if sort_by == 'instrument' %}
                                         {% if sort_direction == 'asc' %}
-                                            <a href="/video-playlist/instrument/asc">▲</a>
-                                            <a href="/video-playlist/instrument/desc">▽</a>
+                                            <a href="/Playlist/instrument/asc">▲</a>
+                                            <a href="/Playlist/instrument/desc">▽</a>
                                         {% else %}
-                                            <a href="/video-playlist/instrument/asc">△</a>
-                                            <a href="/video-playlist/instrument/desc">▼</a>
+                                            <a href="/Playlist/instrument/asc">△</a>
+                                            <a href="/Playlist/instrument/desc">▼</a>
                                         {% endif %}
                                     {% else %}
-                                        <a href="/video-playlist/instrument/asc">△</a>
-                                        <a href="/video-playlist/instrument/desc">▽</a>
+                                        <a href="/Playlist/instrument/asc">△</a>
+                                        <a href="/Playlist/instrument/desc">▽</a>
                                     {% endif %}
                                 </div>
                             </div>
@@ -180,10 +180,10 @@
                         <td>{{ video.metadata['length'] }}초</td>
                         <td>{{ video.metadata['instrument'] }}</td>
                         <td>
-                            <button onclick="location.href='/video-playlist/rename/{{ video._id }}'">수정</button>
+                            <button onclick="location.href='/Playlist/rename/{{ video._id }}'">수정</button>
                         </td>
                         <td>
-                            <button onclick="location.href='/video-playlist/view/{{ video._id }}'">재생</button>
+                            <button onclick="location.href='/Playlist/view/{{ video._id }}'">재생</button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -305,7 +305,7 @@
                     const field = this.dataset.field;
 
                     if (newValue !== originalValue) {
-                        fetch(`/video-playlist/rename/${videoId}`, {
+                        fetch(`/Playlist/rename/${videoId}`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                             body: `new_name=${encodeURIComponent(newValue)}`

@@ -368,11 +368,14 @@ def get_pose_set():
         frame = jpeg.tobytes()
         yield (b'--frame\r\n'
                 b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+        
+# 파일 접근 동기화를 위한 Lock 객체 생성
+file_lock = threading.Lock()
 
-def gesture_gen():
-    global gesture_preset, sounds, isRecording, out, height, width, fps
-    def load_and_train_knn(preset):
-        file_path = 'data/gesture/' + preset + '/gesture_train.csv'
+def load_and_train_knn(preset):
+    file_path = 'data/gesture/' + preset + '/gesture_train.csv'
+    
+    with file_lock:
         if os.path.exists(file_path):
             os.remove(file_path)
 
@@ -383,31 +386,30 @@ def gesture_gen():
                 with open(file, 'r') as f2:
                     while True:
                         line = f2.readline()  # Read a row from the merge target file
-
                         if not line:  # End of the csv file
                             break
-
                         f.write(line)  # Write the row to the merge file
-                
-                file_name = file.split('/')[-1]
 
-        # Gesture recognition model
+    # Gesture recognition model
+    with file_lock:
         if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
             file = np.genfromtxt(file_path, delimiter=',')
         else:
             file = np.empty((0, 16))
             return None
-        
-        angle = file[:, :-1].astype(np.float32)
-        label = file[:, -1].astype(np.float32)
-        
-        knn = cv2.ml.KNearest_create()
-        knn.train(angle, cv2.ml.ROW_SAMPLE, label)
-        
-        return knn
 
-    current_preset = gesture_preset
-    knn = load_and_train_knn(current_preset)
+    angle = file[:, :-1].astype(np.float32)
+    label = file[:, -1].astype(np.float32)
+
+    knn = cv2.ml.KNearest_create()
+    knn.train(angle, cv2.ml.ROW_SAMPLE, label)
+
+    return knn
+
+def gesture_gen():
+    global gesture_preset, sounds, isRecording, out, height, width, fps
+    current_gesture_preset = gesture_preset
+    knn = load_and_train_knn(current_gesture_preset)
 
     max_num_hands = 1
 
@@ -423,13 +425,12 @@ def gesture_gen():
     min_tracking_confidence=0.5)
 
     temp_idx = None
-
     current_channel=None
 
     while cap.isOpened():
-        if gesture_preset != current_preset:
-            current_preset = gesture_preset
-            knn = load_and_train_knn(current_preset)
+        if gesture_preset != current_gesture_preset:
+            current_gesture_preset = gesture_preset
+            knn = load_and_train_knn(current_gesture_preset)
         ret, img = cap.read()
         if not ret:
             continue
@@ -502,33 +503,8 @@ def gesture_gen():
 # 웹캠
 def gesture_gen_2():
     global gesture_preset, sounds, isRecording, out2, height, width, fps
-    file_path = 'data/gesture/' + gesture_preset + '/gesture_train.csv'
-    if os.path.exists(file_path):
-        os.remove(file_path)
-
-    # data 폴더에 있는 데이터셋들 취합
-    file_list = glob.glob('data/gesture/' + gesture_preset + '/' + '*')
-    with open('data/gesture/' + gesture_preset + '/gesture_train.csv', 'w') as f:  # 2-1.merge할 파일을 열고
-        for file in file_list:
-            with open(file, 'r') as f2:
-                while True:
-                    line = f2.readline()  # 2.merge 대상 파일의 row 1줄을 읽어서
-
-                    if not line:  # row가 없으면 해당 csv 파일 읽기 끝
-                        break
-
-                    f.write(line)  # 3.읽은 row 1줄을 merge할 파일에 쓴다.
-
-    # Gesture recognition model
-    if os.path.exists('data/gesture/' + gesture_preset + '/gesture_train.csv') and os.path.getsize('data/gesture/' + gesture_preset + '/gesture_train.csv') > 0:
-        file = np.genfromtxt('data/gesture/' +
-                             gesture_preset + '/gesture_train.csv', delimiter=',')
-    else:
-        file = np.empty((0, 16))
-    angle = file[:, :-1].astype(np.float32)
-    label = file[:, -1].astype(np.float32)
-    knn = cv2.ml.KNearest_create()
-    knn.train(angle, cv2.ml.ROW_SAMPLE, label)
+    current_gesture_preset = gesture_preset
+    knn = load_and_train_knn(current_gesture_preset)
 
     max_num_hands = 1
 
@@ -547,6 +523,9 @@ def gesture_gen_2():
     current_channel = None
 
     while cap2.isOpened():
+        if gesture_preset != current_gesture_preset:
+            current_gesture_preset = gesture_preset
+            knn = load_and_train_knn(current_gesture_preset)
         ret2, img2 = cap2.read()
         if not ret2:
             continue
@@ -625,7 +604,7 @@ def gesture_gen_2():
 
 def pose_gen():
     global pose_preset, sounds, isRecording, out, height, width, fps
-    def load_and_train_knn(preset):        
+    def pose_load_and_train_knn(preset):        
         # 기존에 수집된 데이터셋 초기화
         file_path = 'data/pose/'+ preset +'/pose_angle_train.csv'
         if os.path.exists(file_path):
@@ -660,8 +639,8 @@ def pose_gen():
 
         return knn
 
-    current_preset = gesture_preset
-    knn = load_and_train_knn(current_preset)
+    current_pose_preset = pose_preset
+    knn = pose_load_and_train_knn(current_pose_preset)
 
     # MediaPipe pose 모델 초기화
     mp_pose = mp.solutions.pose
@@ -678,9 +657,9 @@ def pose_gen():
 
     temp_idx = None
     while cap.isOpened():
-        if pose_preset != current_preset:
-            current_preset = pose_preset
-            knn = load_and_train_knn(current_preset)
+        if pose_preset != current_pose_preset:
+            current_pose_preset = pose_preset
+            knn = pose_load_and_train_knn(current_pose_preset)
         ret, img=cap.read()
         if not ret:
             continue
@@ -936,6 +915,7 @@ def get_music_files(instrument_code):
     music_dir = os.path.join('instrument', instrument_dir)
     files = [f for f in os.listdir(music_dir) if f.endswith('.ogg')]
     return jsonify(files)
+    
 @app.route('/music/<instrument_code>/<filename>')
 def serve_music_file(instrument_code, filename):
     instrument_dir = instrument.get(instrument_code)
