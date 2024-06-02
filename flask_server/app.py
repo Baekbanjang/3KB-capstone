@@ -788,28 +788,43 @@ def hand_gestures_play():
             if 'preset' in request.form:
                 gesture_preset = request.form['preset']
                 return render_template('MovementPlay.html', message="프리셋 변경")
+            if 'isRecording' in request.form:
+                if(request.form['isRecording'] == 'True') :
+                    update_current_time()
+                    out = cv2.VideoWriter(f"{output_directory}/output_{current_time}_left.avi", fourcc, fps, (width, height))
+                    out2 = cv2.VideoWriter(f"{output_directory}/output_{current_time}_right.avi", fourcc, fps, (width, height))
+                    isRecording = True
+                    audio_recording_thread = threading.Thread(target=record_audio)
+                    audio_recording_thread.start()
+                    return render_template('MovementPlay.html', message="녹화를 시작합니다.")
+                elif(request.form['isRecording'] == 'False') :
+                    isRecording = None
+                    audio_recording_thread.join()
+                    out.release()
+                    out2.release()
+                    merge_videos_horizontally(f"{output_directory}/output_{current_time}_left.avi", f"{output_directory}/output_{current_time}_right.avi", f"{output_directory}/output_{current_time}.avi")
+                    merge_audio_video(f"{output_directory}/output_{current_time}.avi", 
+                                    f"{output_directory}/output_{current_time}.wav", f"final_output_{current_time}.mp4")
+                    return render_template('MovementPlay.html', message="녹화를 종료합니다.")
         if (mode == "pose"):
             if 'preset' in request.form:
                 pose_preset = request.form['preset']
                 return render_template('MovementPlay.html', message="프리셋 변경")
-        if 'isRecording' in request.form:
-            if(request.form['isRecording'] == 'True') :
-                update_current_time()
-                out = cv2.VideoWriter(f"{output_directory}/output_{current_time}_left.avi", fourcc, fps, (width, height))
-                out2 = cv2.VideoWriter(f"{output_directory}/output_{current_time}_right.avi", fourcc, fps, (width, height))
-                isRecording = True
-                audio_recording_thread = threading.Thread(target=record_audio)
-                audio_recording_thread.start()
-                return render_template('MovementPlay.html', message="녹화를 시작합니다.")
-            elif(request.form['isRecording'] == 'False') :
-                isRecording = None
-                audio_recording_thread.join()
-                out.release()
-                out2.release()
-                merge_videos_horizontally(f"{output_directory}/output_{current_time}_left.avi", f"{output_directory}/output_{current_time}_right.avi", f"{output_directory}/output_{current_time}.avi")
-                merge_audio_video(f"{output_directory}/output_{current_time}.avi", 
-                                f"{output_directory}/output_{current_time}.wav", f"final_output_{current_time}.mp4")
-                return render_template('MovementPlay.html', message="녹화를 종료합니다.")
+            if 'isRecording' in request.form:
+                if(request.form['isRecording'] == 'True') :
+                    update_current_time()
+                    out = cv2.VideoWriter(f"{output_directory}/output_{current_time}.avi", fourcc, fps, (width, height))
+                    isRecording = True
+                    audio_recording_thread = threading.Thread(target=record_audio)
+                    audio_recording_thread.start()
+                    return render_template('MovementPlay.html', message="녹화를 시작합니다.")
+                elif(request.form['isRecording'] == 'False') :
+                    isRecording = None
+                    audio_recording_thread.join()
+                    out.release()
+                    merge_audio_video(f"{output_directory}/output_{current_time}.avi", 
+                                    f"{output_directory}/output_{current_time}.wav", f"final_output_{current_time}.mp4")
+                    return render_template('MovementPlay.html', message="녹화를 종료합니다.")
     return render_template('MovementPlay.html', gesture_preset=gesture_preset, pose_preset=pose_preset)
 
 @app.route('/Instrument_choice', methods=['GET', 'POST'])
@@ -822,7 +837,7 @@ def instrument_choice():
             return render_template('instrumentChoice.html', message="악기 변경")
     return render_template('instrumentChoice.html')
 
-@app.route('/video-playlist')   
+@app.route('/Playlist')   
 def playlist():
     global sort_by, sort_direction
     sort_by = 'creationDate'
@@ -831,7 +846,7 @@ def playlist():
     videolist = list(fs.find())  # GridFS에서 모든 파일을 조회
     return render_template('Playlist.html', videos=videolist, sort_by=sort_by, sort_direction=sort_direction)
 
-@app.route('/video-playlist/view/<video_id>', methods=['GET'])
+@app.route('/Playlist/view/<video_id>', methods=['GET'])
 def view(video_id):
     # MongoDB에서 해당 비디오 파일 가져오기
     video = fs.find_one({'_id': bson.ObjectId(video_id)})
@@ -844,12 +859,12 @@ def view(video_id):
     else:
         return 'File not found', 404
 
-#@app.route('/video-playlist/download/<video_id>')
+#@app.route('/Playlist/download/<video_id>')
 #def download(video_id):
 #    video = fs.get(ObjectId(video_id))
 #    return send_file(video, attachment_filename=video.filename, as_attachment=True)
 
-@app.route('/video-playlist/rename/<video_id>', methods=['POST'])
+@app.route('/Playlist/rename/<video_id>', methods=['POST'])
 def rename(video_id):
     new_name = request.form.get('new_name')
     try:
@@ -867,7 +882,7 @@ def rename(video_id):
         error_message = str(e) if str(e) else 'An error occurred while updating video name.'
         return jsonify({'success': False, 'message': error_message}), 500
 
-@app.route('/video-playlist/delete_selected', methods=['POST'])
+@app.route('/Playlist/delete_selected', methods=['POST'])
 def delete_selected():
     video_ids = request.form.getlist('video_ids')
     sort_by = request.form.get('sort_by', 'name')
@@ -876,7 +891,7 @@ def delete_selected():
         fs.delete(ObjectId(video_id))
     return redirect(url_for('list_videos', sort_by=sort_by, sort_direction=sort_direction))
 
-@app.route('/video-playlist/<sort_by>/<sort_direction>')
+@app.route('/Playlist/<sort_by>/<sort_direction>')
 def list_videos(sort_by, sort_direction):
     videolist = get_sorted_videos(sort_by, sort_direction)
     # HTML 템플릿에 비디오 목록 전달
