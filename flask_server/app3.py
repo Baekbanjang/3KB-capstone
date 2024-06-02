@@ -49,6 +49,7 @@ pose_code = None
 isStop = False
 isRecording = None
 instrument_code = '0'
+#octave_code='5'
 gesture_preset = '1'
 pose_preset = '1'
 FILENAME = ''
@@ -63,7 +64,7 @@ frames = []
 
 code = {
     '0': 'c_low', '1': 'd', '2': 'e', '3': 'f', '4': 'g',
-    '5': 'a', '6': 'b', '7': 'stop'
+    '5': 'a', '6': 'b', '7': 'stop', '8': 'octaveup', '9': 'octavedown'
 }
 
 mode = {
@@ -75,14 +76,39 @@ instrument = {
     '1': "pipe"
 }
 
-sounds = {
-    0: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/c_low.ogg'),
-    1: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/d.ogg'),
-    2: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/e.ogg'),
-    3: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/f.ogg'),
-    4: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/g.ogg'),
-    5: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/a.ogg'),
-    6: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/b.ogg')
+octave = {
+    '1':'1','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7'
+}
+
+#악기안에 번호로 숫자 폴더를 만들어 음역 대 구분
+gesture_sounds1 = {
+    0: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave['4']+'/c.ogg'),
+    1: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave['4']+'/d.ogg'),
+    2: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave['4']+'/e.ogg'),
+    3: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave['4']+'/f.ogg'),
+    '4': pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave['4']+'/g.ogg'),
+    5: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave['4']+'/a.ogg'),
+    6: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave['4']+'/b.ogg')
+}
+
+gesture_sounds2 = {
+    0: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave['4']+'/c.ogg'),
+    1: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave['4']+'/d.ogg'),
+    2: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave['4']+'/e.ogg'),
+    3: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave['4']+'/f.ogg'),
+    '4': pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave['4']+'/g.ogg'),
+    5: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave['4']+'/a.ogg'),
+    6: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave['4']+'/b.ogg')
+}
+
+pose_sounds = {
+    0: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave['4']+'/c.ogg'),
+    1: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave['4']+'/d.ogg'),
+    2: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave['4']+'/e.ogg'),
+    3: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave['4']+'/f.ogg'),
+    '4': pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave['4']+'/g.ogg'),
+    5: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave['4']+'/a.ogg'),
+    6: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave['4']+'/b.ogg')
 }
 
 # 현재 날짜 및 시간을 포맷에 맞게 가져오기
@@ -196,16 +222,43 @@ def merge_audio_video(video_file, audio_file, output_file):  # 오디오, 비디
         print("Error Output:", e.stderr.decode())
 
 
-def update_sounds():
-    global instrument_code, sounds
-    sounds = {
-        0: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/c_low.ogg'),
-        1: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/d.ogg'),
-        2: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/e.ogg'),
-        3: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/f.ogg'),
-        4: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/g.ogg'),
-        5: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/a.ogg'),
-        6: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/b.ogg')
+def update_gesture_sounds1(octave_code='4'):
+    global instrument_code, gesture_sounds1
+    gesture_sounds1 = {
+        0: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/c.ogg'),
+        1: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/d.ogg'),
+        2: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/e.ogg'),
+        3: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/f.ogg'),
+        4: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/g.ogg'),
+        5: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/a.ogg'),
+        6: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/b.ogg')
+        
+    }
+
+def update_gesture_sounds2(octave_code='4'):
+    global instrument_code, gesture_sounds2
+    gesture_sounds2 = {
+        0: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/c.ogg'),
+        1: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/d.ogg'),
+        2: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/e.ogg'),
+        3: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/f.ogg'),
+        4: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/g.ogg'),
+        5: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/a.ogg'),
+        6: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/b.ogg')
+        
+    }
+
+def update_pose_sounds(octave_code='4'):
+    global instrument_code, pose_sounds
+    pose_sounds = {
+        0: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/c.ogg'),
+        1: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/d.ogg'),
+        2: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/e.ogg'),
+        3: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/f.ogg'),
+        4: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/g.ogg'),
+        5: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/a.ogg'),
+        6: pygame.mixer.Sound('flask_server/instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/b.ogg')
+        
     }
 
 
@@ -361,14 +414,19 @@ def get_pose_set():
 
 # 기존 카메라(데스크탑)
 def gesture_gen():
-    global gesture_preset, sounds, isRecording, out, height, width, fps
+    # 전역 변수 선언
+    global gesture_preset, gesture_sounds1, isRecording, out, height, width, fps
+    octave_code=5
+
+    #기존에 있던 제스처 데이터 파일이 있다면 삭제
     file_path = 'flask_server/data/gesture/' + gesture_preset + '/gesture_train.csv'
     if os.path.exists(file_path):
         os.remove(file_path)
 
-    # data 폴더에 있는 데이터셋들 취합
-    file_list = glob.glob('flask_server/data/gesture/' +
-                          gesture_preset + '/' + '*')
+    # data 폴더에 있는 데이터셋들 취합, 특정 동작에 대한 데이터셋 파일들을 모두 찾아 리스트로 저장
+    file_list = glob.glob('flask_server/data/gesture/' + gesture_preset + '/' + '*')
+
+    # 찾은 파일들을 하나로 합치기 위해 새로운 파일을 작성
     with open('flask_server/data/gesture/' + gesture_preset + '/gesture_train.csv', 'w') as f:  # 2-1.merge할 파일을 열고
         for file in file_list:
             with open(file, 'r') as f2:
@@ -379,25 +437,31 @@ def gesture_gen():
                         break
 
                     f.write(line)  # 3.읽은 row 1줄을 merge할 파일에 쓴다.
+                                   # 파일들의 내용을 합침
 
-    # Gesture recognition model
+    # 합친 파일을 기반으로 KNN 모델을 훈련시키기 위해 데이터 로드
     if os.path.exists('flask_server/data/gesture/' + gesture_preset + '/gesture_train.csv') and os.path.getsize('flask_server/data/gesture/' + gesture_preset + '/gesture_train.csv') > 0:
         file = np.genfromtxt('flask_server/data/gesture/' +
                              gesture_preset + '/gesture_train.csv', delimiter=',')
     else:
         file = np.empty((0, 16))
 
+    # 파일에서 각도 데이터와 레이블 데이터 분리
     angle = file[:, :-1].astype(np.float32)
     label = file[:, -1].astype(np.float32)
+
+    # KNN 모델 생성 및 훈련
     knn = cv2.ml.KNearest_create()
     knn.train(angle, cv2.ml.ROW_SAMPLE, label)
 
+     # 동시에 인식할 수 있는 손의 최대 개수 설정
     max_num_hands = 1
 
+    # 프레임 카운트 및 시작 시간 초기화
     frame_count = 0
     start_time = time.time()  # 시작 시간 기록
 
-    # MediaPipe hands model
+    # MediaPipe를 이용한 제스처 인식 모델 초기화
     mp_hands = mp.solutions.hands
     mp_drawing = mp.solutions.drawing_utils
     hands = mp_hands.Hands(
@@ -408,22 +472,28 @@ def gesture_gen():
     temp_idx = None
     current_channel=None
 
+    # 카메라1이 정상적으로 열렸다면 루프 시작
     while cap.isOpened():
         ret, img = cap.read()
         if not ret:
             continue
 
+        # 프레임 카운트 및 현재 FPS 계산
         frame_count += 1
         current_time = time.time() - start_time  # 현재 경과된 시간 계산
         fps = round(frame_count / current_time)  # 현재 주사율 계산
 
+        # 이미지 전처리
         img = cv2.flip(img, 1)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
+        # 제스처 인식 결과 처리
         result = hands.process(img)
 
+        # 이미지를 다시 BGR로 변환하여 시각화 준비
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
+        # 인식된 제스처가 있다면 각 제스처에 대해 반복
         if result.multi_hand_landmarks is not None:
             for res in result.multi_hand_landmarks:
                 mp_drawing.draw_landmarks(img, res, mp_hands.HAND_CONNECTIONS)
@@ -431,28 +501,28 @@ def gesture_gen():
                 for j, lm in enumerate(res.landmark):
                     joint[j] = [lm.x, lm.y, lm.z]
 
-                # Compute angles between joints
+                # 관절 간의 각도 계산
                 v1 = joint[[0, 1, 2, 3, 0, 5, 6, 7, 0, 9, 10, 11, 0,
                             13, 14, 15, 0, 17, 18, 19], :]  # Parent joint
                 v2 = joint[[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
                             13, 14, 15, 16, 17, 18, 19, 20], :]  # Child joint
                 v = v2 - v1  # [20,3]
-                # Normalize v
                 v = v / np.linalg.norm(v, axis=1)[:, np.newaxis]
 
-                # Get angle using arcos of dot product
+                # 점 프로덕트를 이용한 각도 계산
                 angle = np.arccos(np.einsum('nt,nt->n',
                                             v[[0, 1, 2, 4, 5, 6, 8, 9, 10,
                                                 12, 13, 14, 16, 17, 18], :],
                                             v[[1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15, 17, 18, 19], :]))  # [15,]
 
-                angle = np.degrees(angle)  # Convert radian to degree
+                angle = np.degrees(angle)  # 라디안에서 도로 변환
 
-                
+                # KNN을 이용하여 가장 가까운 이웃 찾기
                 data = np.array([angle], dtype=np.float32)
                 ret, results, neighbours, dist = knn.findNearest(data, 3)
                 idx = int(results[0][0])
 
+                # 인식된 동작에 따라 사운드 재생
                 if temp_idx != idx:
                     if current_channel:
                         current_channel.stop()
@@ -466,10 +536,23 @@ def gesture_gen():
 
                     current_channel.stop()
 
-                    if idx in sounds:
-                        sound = sounds[idx]
+                    if idx in gesture_sounds1:
+                        sound = gesture_sounds1[idx]
                         sound.set_volume(0.3)
                         current_channel.play(sound)
+                    elif idx ==8:
+                        octave_code += 1
+                        if octave_code > 7:  # 여기서 2는 octave_code의 최대값
+                            octave_code = 7  # 최대값 초과 시 octave_code를 최대값으로 설정
+                        octave_code_str = str(octave_code)
+                        update_gesture_sounds1(octave_code_str)
+                    elif idx ==9:
+                        octave_code -= 1
+                        if octave_code < 1:  # 여기서 2는 octave_code의 최대값
+                            octave_code = 1  # 최대값 초과 시 octave_code를 최대값으로 설정
+                        octave_code_str = str(octave_code)
+                        update_gesture_sounds1(octave_code_str)
+
                     elif idx == 13:
                         pygame.mixer.music.stop()
 
@@ -481,6 +564,7 @@ def gesture_gen():
         # 프레임에 주사율 표시
         cv2.putText(img, f"FPS: {fps}", (10, 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+      
         ret, jpeg = cv2.imencode('.jpg', img)
         frame = jpeg.tobytes()
         yield (b'--frame\r\n'
@@ -489,25 +573,24 @@ def gesture_gen():
         
 # 웹캠
 def gesture_gen_2():
-    global gesture_preset, sounds, isRecording, out, height, width, fps
+    global gesture_preset, gesture_sounds2, isRecording, out, height, width, fps
+    octave_code=5
     file_path = 'flask_server/data/gesture/' + gesture_preset + '/gesture_train.csv'
     if os.path.exists(file_path):
         os.remove(file_path)
 
-    # data 폴더에 있는 데이터셋들 취합
     file_list = glob.glob('flask_server/data/gesture/' + gesture_preset + '/' + '*')
-    with open('flask_server/data/gesture/' + gesture_preset + '/gesture_train.csv', 'w') as f:  # 2-1.merge할 파일을 열고
+    with open('flask_server/data/gesture/' + gesture_preset + '/gesture_train.csv', 'w') as f: 
         for file in file_list:
             with open(file, 'r') as f2:
                 while True:
-                    line = f2.readline()  # 2.merge 대상 파일의 row 1줄을 읽어서
+                    line = f2.readline()  
 
-                    if not line:  # row가 없으면 해당 csv 파일 읽기 끝
+                    if not line: 
                         break
 
-                    f.write(line)  # 3.읽은 row 1줄을 merge할 파일에 쓴다.
+                    f.write(line)  
 
-    # Gesture recognition model
     if os.path.exists('flask_server/data/gesture/' + gesture_preset + '/gesture_train.csv') and os.path.getsize('flask_server/data/gesture/' + gesture_preset + '/gesture_train.csv') > 0:
         file = np.genfromtxt('flask_server/data/gesture/' +
                              gesture_preset + '/gesture_train.csv', delimiter=',')
@@ -523,7 +606,6 @@ def gesture_gen_2():
     frame_count = 0
     start_time = time.time()  # 시작 시간 기록
 
-    # MediaPipe hands model
     mp_hands = mp.solutions.hands
     mp_drawing = mp.solutions.drawing_utils
     hands = mp_hands.Hands(
@@ -540,8 +622,8 @@ def gesture_gen_2():
             continue
 
         frame_count += 1
-        current_time = time.time() - start_time  # 현재 경과된 시간 계산
-        fps = round(frame_count / current_time)  # 현재 주사율 계산
+        current_time = time.time() - start_time  
+        fps = round(frame_count / current_time)  
 
         img2 = cv2.flip(img2, 1)
         img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
@@ -557,24 +639,21 @@ def gesture_gen_2():
                 for j, lm in enumerate(res.landmark):
                     joint[j] = [lm.x, lm.y, lm.z]
 
-                # Compute angles between joints
                 v1 = joint[[0, 1, 2, 3, 0, 5, 6, 7, 0, 9, 10, 11, 0,
-                            13, 14, 15, 0, 17, 18, 19], :]  # Parent joint
+                            13, 14, 15, 0, 17, 18, 19], :]  
                 v2 = joint[[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
-                            13, 14, 15, 16, 17, 18, 19, 20], :]  # Child joint
-                v = v2 - v1  # [20,3]
-                # Normalize v
+                            13, 14, 15, 16, 17, 18, 19, 20], :]  
+                v = v2 - v1  
+                
                 v = v / np.linalg.norm(v, axis=1)[:, np.newaxis]
 
-                # Get angle using arcos of dot product
                 angle = np.arccos(np.einsum('nt,nt->n',
                                             v[[0, 1, 2, 4, 5, 6, 8, 9, 10,
                                                 12, 13, 14, 16, 17, 18], :],
                                             v[[1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15, 17, 18, 19], :]))  # [15,]
 
-                angle = np.degrees(angle)  # Convert radian to degree
+                angle = np.degrees(angle)  
 
-                # Inference gesture
                 data = np.array([angle], dtype=np.float32)
                 ret2, results, neighbours, dist = knn.findNearest(data, 3)
                 idx = int(results[0][0])
@@ -583,7 +662,7 @@ def gesture_gen_2():
                     if current_channel:
                         current_channel.stop()
 
-                    channel_number = 8 + (idx % 8)  # 8에서 15까지의 채널 사용
+                    channel_number = 8 + (idx % 8)  
                     current_channel = pygame.mixer.Channel(channel_number)
 
                     if current_channel is None:
@@ -591,10 +670,23 @@ def gesture_gen_2():
 
                     current_channel.stop()
 
-                    if idx in sounds:
-                        sound = sounds[idx]
+                    if idx in gesture_sounds2:
+                        sound = gesture_sounds2[idx]
                         sound.set_volume(0.3)
                         current_channel.play(sound)
+                    elif idx ==8:
+                        octave_code += 1
+                        if octave_code > 7:  # 여기서 2는 octave_code의 최대값
+                            octave_code = 7  # 최대값 초과 시 octave_code를 최대값으로 설정
+                        octave_code_str = str(octave_code)
+                        update_gesture_sounds2(octave_code_str)
+                    elif idx ==9:
+                        octave_code -= 1
+                        if octave_code < 1:  # 여기서 2는 octave_code의 최대값
+                            octave_code = 1  # 최대값 초과 시 octave_code를 최대값으로 설정
+                        octave_code_str = str(octave_code)
+                        update_gesture_sounds2(octave_code_str)
+                
                     elif idx == 13:
                         pygame.mixer.music.stop()
 
@@ -603,9 +695,8 @@ def gesture_gen_2():
         if isRecording:
             out.write(img2)
             
-        # 프레임에 주사율 표시
-        cv2.putText(img2, f"FPS: {fps}", (10, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        cv2.putText(img2, f"FPS: {fps}", (10, 30),cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
         ret2, jpeg = cv2.imencode('.jpg', img2)
         frame2 = jpeg.tobytes()
         yield (b'--frame\r\n'
@@ -613,7 +704,7 @@ def gesture_gen_2():
 
 
 def pose_gen():
-    global pose_preset, sounds, isRecording, out, height, width, fps
+    global pose_preset, pose_sounds, isRecording, out, height, width, fps
     # 기존에 수집된 데이터셋 초기화
     file_path = 'flask_server/data/pose/' + pose_preset + '/pose_angle_train.csv'
     if os.path.exists(file_path):
@@ -709,10 +800,22 @@ def pose_gen():
             if temp_idx != idx:
                 temp_idx = idx
                 pygame.mixer.stop()
-                if idx in sounds:
-                    sound = sounds[idx]
+                if idx in pose_sounds:
+                    sound = pose_sounds[idx]
                     sound.set_volume(0.3)
                     sound.play()
+                elif idx ==8:
+                    octave_code += 1
+                    if octave_code > 7:  # 여기서 2는 octave_code의 최대값
+                        octave_code = 7  # 최대값 초과 시 octave_code를 최대값으로 설정
+                    octave_code_str = str(octave_code)
+                    update_pose_sounds(octave_code_str)
+                elif idx ==9:
+                    octave_code -= 1
+                    if octave_code < 1:  # 여기서 2는 octave_code의 최대값
+                        octave_code = 1  # 최대값 초과 시 octave_code를 최대값으로 설정
+                    octave_code_str = str(octave_code)
+                    update_pose_sounds(octave_code_str)
                 elif idx == 13:
                     if pygame.mixer.music.get_busy():
                         pygame.mixer.music.stop()
@@ -817,7 +920,9 @@ def instrument_choice():
     if request.method == 'POST':
         if 'instrument_value' in request.form:
             instrument_code = request.form['instrument_value']
-            update_sounds()
+            update_gesture_sounds1()
+            update_gesture_sounds2()
+            update_pose_sounds()
             return render_template('instrumentChoice.html', message="악기 변경")
     return render_template('instrumentChoice.html')
 

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Video List</title>
+        <!-- 부트 스트랩 css-->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    <!-- 부트 스트랩 JS -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+        <style>
+            .navbar-brand {
+                margin: auto;
+            }
+            /* 입력칸 스타일 */
+            input.edit-input {
+                width: 100%; /* 테이블 셀의 폭에 맞춤 */
+                border: none; /* 기본 테두리 제거 */
+                box-sizing: border-box; /* 패딩 포함하여 너비 계산 */
+            }
+            input.edit-input:focus {
+                outline: none; /* 포커스 시 발생하는 테두리 제거 */
+            }
+            .edit-input {
+            border: none;
+            width: auto;
+            box-sizing: border-box; /* padding 과 border가 width와 height에 포함되도록 */
+            }
+            table {
+                table-layout: auto; /* 테이블의 너비를 자동으로 조절 */
+                width: 100%; /* 전체 테이블의 너비를 조절 */
+            }
+            td {
+                overflow: hidden; /* 내용이 넘칠 경우 숨김 처리 */
+                text-overflow: ellipsis; /* 내용이 넘칠 경우 생략 부호 (...) 표시 */
+                white-space: nowrap; /* 텍스트가 한 줄에 표시되도록 설정 */
+            }
+            th, td {
+                text-align: left; /* 텍스트를 왼쪽 정렬 */
+            }
+            .title-with-arrows {
+                display: flex;
+                align-items: center;
+            }
+            .sorting-th .title-with-arrows .arrows {
+    display: flex;
+    flex-direction: column;
+}
+            .sorting-th .arrows a {
+                padding: 0 5px; /* 화살표와 제목 사이의 간격 조정 */
+                text-decoration: none; /* 밑줄 제거 */
+                color: black; /* 화살표의 색상을 검정색으로 설정 */
+            }
+        </style>
+    </head>
+    <body>
+        <nav class="navbar fixed-top navbar-light bg-light">
+            <a class="navbar-brand" href="#">Gesture Sound</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <!-- 여기에 드롭다운 메뉴 추가 -->
+    
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button"
+                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            메뉴
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                            <a class="dropdown-item" href="/Movement_play">메인 화면</a>
+                            <a class="dropdown-item" href="/Instrument_choice">악기소리 설정</a>
+                            <a class="dropdown-item" href="/Get_HandGestures">모션 사용자 설정</a>
+                            <a class="dropdown-item" href="/Playlist">영상 재생 목록</a>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+        <h1>Video List</h1>
+        <div class="container mt-3">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>
+                            <input type="checkbox" id="selectAll">
+                        </th>
+                        <th class="sorting-th">
+                            <div class="title-with-arrows">
+                                <div class="title">이름</div>
+                                <div class="arrows">
+                                    {% if sort_by == 'name' %}
+                                        {% if sort_direction == 'asc' %}
+                                            <a href="/Playlist/name/asc">▲</a>
+                                            <a href="/Playlist/name/desc">▽</a>
+                                        {% else %}
+                                            <a href="/Playlist/name/asc">△</a>
+                                            <a href="/Playlist/name/desc">▼</a>
+                                        {% endif %}
+                                    {% else %}
+                                        <a href="/Playlist/name/asc">△</a>
+                                        <a href="/Playlist/name/desc">▽</a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </th>
+                        <th class="sorting-th">
+                            <div class="title-with-arrows">
+                                <div class="title">생성 날짜</div>
+                                <div class="arrows">
+                                    {% if sort_by == 'creationDate' %}
+                                        {% if sort_direction == 'asc' %}
+                                            <a href="/Playlist/creationDate/asc">▲</a>
+                                            <a href="/Playlist/creationDate/desc">▽</a>
+                                        {% else %}
+                                            <a href="/Playlist/creationDate/asc">△</a>
+                                            <a href="/Playlist/creationDate/desc">▼</a>
+                                        {% endif %}
+                                    {% else %}
+                                        <a href="/Playlist/creationDate/asc">△</a>
+                                        <a href="/Playlist/creationDate/desc">▽</a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </th>
+                        <th class="sorting-th">
+                            <div class="title-with-arrows">
+                                <div class="title">길이</div>
+                                <div class="arrows">
+                                    {% if sort_by == 'length' %}
+                                        {% if sort_direction == 'asc' %}
+                                            <a href="/Playlist/length/asc">▲</a>
+                                            <a href="/Playlist/length/desc">▽</a>
+                                        {% else %}
+                                            <a href="/Playlist/length/asc">△</a>
+                                            <a href="/Playlist/length/desc">▼</a>
+                                        {% endif %}
+                                    {% else %}
+                                        <a href="/Playlist/length/asc">△</a>
+                                        <a href="/Playlist/length/desc">▽</a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </th>
+                        <th class="sorting-th">
+                            <div class="title-with-arrows">
+                                <div class="title">악기</div>
+                                <div class="arrows">
+                                    {% if sort_by == 'instrument' %}
+                                        {% if sort_direction == 'asc' %}
+                                            <a href="/Playlist/instrument/asc">▲</a>
+                                            <a href="/Playlist/instrument/desc">▽</a>
+                                        {% else %}
+                                            <a href="/Playlist/instrument/asc">△</a>
+                                            <a href="/Playlist/instrument/desc">▼</a>
+                                        {% endif %}
+                                    {% else %}
+                                        <a href="/Playlist/instrument/asc">△</a>
+                                        <a href="/Playlist/instrument/desc">▽</a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </th>
+                        <th>
+                            <button type="button" onclick="deleteSelectedVideos()">삭제</button>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for video in videos %}
+                    <tr>
+                        <td><input type="checkbox" name="video_ids" value="{{ video._id }}"></td> <!-- 체크박스 추가 -->
+                        <td><span class="editable" data-video-id="{{ video._id }}" data-field="name">{{ video.metadata['name'] }}</span></td>
+                        <td>{{ video.metadata['creationDate'] }}</td>
+                        <td>{{ video.metadata['length'] }}초</td>
+                        <td>{{ video.metadata['instrument'] }}</td>
+                        <td>
+                            <button onclick="location.href='/Playlist/rename/{{ video._id }}'">수정</button>
+                        </td>
+                        <td>
+                            <button onclick="location.href='/Playlist/view/{{ video._id }}'">재생</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </body>
+    <script>
+        // 모든 체크박스를 선택하는 함수
+        function selectAllCheckboxes() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"][name="video_ids"]');
+            checkboxes.forEach(function(checkbox) {
+                checkbox.checked = true;
+            });
+        }
+
+        // 모든 체크박스를 선택 해제하는 함수
+        function deselectAllCheckboxes() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"][name="video_ids"]');
+            checkboxes.forEach(function(checkbox) {
+                checkbox.checked = false;
+            });
+        }
+
+        // "전체 선택" 체크박스 클릭 시 모든 체크박스를 선택 또는 선택 해제
+        const selectAllCheckbox = document.getElementById('selectAll');
+        selectAllCheckbox.addEventListener('click', function() {
+            if (this.checked) {
+                selectAllCheckboxes();
+            } else {
+                deselectAllCheckboxes();
+            }
+        });
+
+        // 선택된 비디오 ID를 배열에 저장하는 함수
+        function getSelectedVideoIds() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"][name="video_ids"]:checked');
+            const selectedVideoIds = Array.from(checkboxes).map(checkbox => checkbox.value);
+            return selectedVideoIds;
+        }
+
+        // 선택된 비디오를 삭제하는 함수
+        function deleteSelectedVideos() {
+            const selectedVideoIds = getSelectedVideoIds();
+            if (selectedVideoIds.length === 0) {
+                alert("삭제할 비디오를 선택하세요.");
+                return;
+            }
+
+            if (confirm("선택된 비디오를 삭제하시겠습니까?")) {
+                fetch('/Playlist/delete_selected', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ video_ids: selectedVideoIds }).toString()
+                })
+                .then(response => response.text())
+                .then(data => {
+                    // 비디오 목록을 받아와서 현재 페이지에 다시 로드
+                    document.body.innerHTML = data;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('비디오를 삭제하는 동안 오류가 발생했습니다.');
+                });
+            }
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+    const makeEditable = function(element) {
+        element.addEventListener('click', function(event) {
+            const target = event.target;
+            if (target.tagName === 'SPAN' && target.classList.contains('editable')) {
+                const span = target;
+                const td = span.parentElement;
+                const originalValue = span.innerText;
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = originalValue;
+                input.dataset.videoId = span.dataset.videoId;
+                input.dataset.field = span.dataset.field;
+                input.dataset.originalValue = originalValue;
+                input.className = 'edit-input';
+
+                // td의 스타일을 input에 적용
+                input.style.font = window.getComputedStyle(td).font;
+                input.style.textAlign = window.getComputedStyle(td).textAlign;
+
+                // td의 width 정보를 가져와 input에 적용
+                const tdWidth = td.offsetWidth;
+                input.style.width = (tdWidth - 20) + 'px'; // 20px 정도를 제외한 값으로 조정
+
+                // td의 padding을 가져와 input에 적용
+                const tdPaddingTop = parseInt(window.getComputedStyle(td).paddingTop);
+                const tdPaddingBottom = parseInt(window.getComputedStyle(td).paddingBottom);
+                const tdPaddingLeft = parseInt(window.getComputedStyle(td).paddingLeft);
+                const tdPaddingRight = parseInt(window.getComputedStyle(td).paddingRight);
+                input.style.height = (td.offsetHeight - tdPaddingTop - tdPaddingBottom - 10) + 'px'; // 10px 정도를 제외한 값으로 조정
+
+                // span의 위치를 저장하고 input을 추가한 후, span을 숨김
+                const rect = span.getBoundingClientRect();
+                const spanTop = rect.top + window.pageYOffset;
+                const spanLeft = rect.left + window.pageXOffset;
+                input.style.position = 'absolute';
+                input.style.top = spanTop + 'px';
+                input.style.left = spanLeft + 'px';
+                input.style.zIndex = '1';
+                input.style.margin = '0';
+                input.style.padding = '0';
+                input.style.border = 'none';
+                input.style.background = 'none';
+                document.body.appendChild(input);
+                span.style.visibility = 'hidden';
+
+                input.focus();
+
+                input.addEventListener('blur', function() {
+                    const newValue = this.value;
+                    const videoId = this.dataset.videoId;
+                    const field = this.dataset.field;
+
+                    if (newValue !== originalValue) {
+                        fetch(`/Playlist/rename/${videoId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: `new_name=${encodeURIComponent(newValue)}`
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                span.innerText = newValue;
+                            } else {
+                                alert(data.message);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('An error occurred while updating video name.');
+                        });
+                    }
+
+                    // input 제거 및 span 복구
+                    input.parentNode.removeChild(input);
+                    span.style.visibility = 'visible';
+                });
+            }
+        });
+    };
+
+    // 수정 가능한 span 요소들에 대해 makeEditable 함수 호출
+    const editableSpans = document.querySelectorAll('.editable');
+    editableSpans.forEach(makeEditable);
+});
+
+    </script>
+</html>

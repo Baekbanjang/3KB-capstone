@@ -38,7 +38,7 @@
     </style>
 </head>
 
-<body>
+<body data-gesture-preset="{{ gesture_preset }}" data-pose-preset="{{ pose_preset }}">
     <nav class="navbar fixed-top navbar-light bg-light">
         <a class="navbar-brand" href="#">Gesture Sound</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse"
@@ -235,6 +235,41 @@
                     </div>
                     </td>
                 </tr>
+                <tr>
+                    <td>옥타브 업 신호</td>
+                    <td><span id="poseDescription8">..</span>
+                        <input type="text" id="poseInput8" style="display:none;">
+                    </td>
+                    <td><button class="LiveButton" value="8">녹화하기</button></td>
+                    <td><button class="DeleteButton" value="8">삭제하기</button></td>
+                    <td><button onclick="editPose(8)">수정</button>
+                        <button onclick="savePose(8)" style="display:none;">저장</button>
+                    </td>
+                    <div id="myDiv8" style="display: none;">
+                        <img id="video_gesture8" src="" /> <br>
+                        <img id="video_pose8" src=""/> <br>
+                        <button class="stopButton" value="True">녹화 중지하기</button>
+                    </div>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>옥타브 다운 신호</td>
+                    <td><span id="poseDescription9">..</span>
+                        <input type="text" id="poseInput9" style="display:none;">
+                    </td>
+                    <td><button class="LiveButton" value="9">녹화하기</button></td>
+                    <td><button class="DeleteButton" value="9">삭제하기</button></td>
+                    <td><button onclick="editPose(9)">수정</button>
+                        <button onclick="savePose(9)" style="display:none;">저장</button>
+                    </td>
+                    <div id="myDiv9" style="display: none;">
+                        <img id="video_gesture9" src="" /> <br>
+                        <img id="video_pose9" src=""/> <br>
+                        <button class="stopButton" value="True">녹화 중지하기</button>
+                    </div>
+                    </td>
+                </tr>
             </tbody>
         </table>
     </div>
@@ -267,9 +302,24 @@
             document.querySelector(`[onclick="savePose(${id})"]`).style.display = 'none';
         }
 
+        function updateButtonColors(preset) {
+            const buttons = document.querySelectorAll('.PresetButton');
+            buttons.forEach(button => {
+                button.classList.remove('btn-success');
+                button.classList.add('btn-primary');
+            });
+            const activeButton = document.querySelector('.PresetButton[value="' + preset + '"]');
+            if (activeButton) {
+                activeButton.classList.remove('btn-primary');
+                activeButton.classList.add('btn-success');
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             const gestureModeButton = document.getElementById('GestureModeButton');
             const poseModeButton = document.getElementById('PoseModeButton');
+            gesturePreset = document.body.getAttribute('data-gesture-preset');
+            posePreset = document.body.getAttribute('data-pose-preset');
             currentMode = 'gesture'; // 기본 모드를 'gesture'로 설정
 
             gestureModeButton.addEventListener('click', function () {
@@ -280,6 +330,7 @@
                 poseModeButton.classList.remove('btn-primary');
 
                 currentMode = 'gesture'; // 제스처 모드 선택 시
+                updateButtonColors(gesturePreset);
             });
 
             poseModeButton.addEventListener('click', function () {
@@ -290,14 +341,30 @@
                 gestureModeButton.classList.remove('btn-primary');
 
                 currentMode = 'pose'; // 제스처 모드 선택 시
+                updateButtonColors(posePreset);
             });
         });
 
         // Ajax를 사용하여 Flask로 데이터를 비동기적으로 전송하는 함수
         $(document).ready(function () {
+            $('.PresetButton').each(function() {
+                if ($(this).val() == gesturePreset) {
+                    $(this).removeClass('btn-primary').addClass('btn-success');
+                }
+            });
+
             $('.PresetButton').click(function () {
                 var buttonValue = $(this).val();
                 console.log("버튼 값:", buttonValue);
+                if (currentMode === 'gesture') {
+                    gesturePreset = buttonValue;
+                } else if (currentMode === 'pose') {
+                    posePreset = buttonValue;
+                }
+                updateButtonColors(buttonValue);
+                $('.PresetButton').removeClass('btn-success').addClass('btn-secondary');
+                $(this).removeClass('btn-secondary').addClass('btn-success');
+
                 $.ajax({
                     url: "/Get_AllMovements",
                     type: "POST",
@@ -310,6 +377,7 @@
                     }
                 });
             });
+
             $('.LiveButton').click(function () {
                 var buttonValue = $(this).val();
                 console.log("버튼 값:", buttonValue);
@@ -326,6 +394,7 @@
                     }
                 });
             });
+
             $('.DeleteButton').click(function () {
                 var buttonValue = $(this).val();
                 $.ajax({
@@ -340,6 +409,7 @@
                     }
                 });
             });
+            
             $('.stopButton').click(function () {
                 var stopSign = $(this).val();
                 $.ajax({
