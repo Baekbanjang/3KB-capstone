@@ -302,7 +302,6 @@
             gesturePreset = document.body.getAttribute('data-gesture-preset');
             posePreset = document.body.getAttribute('data-pose-preset');
             currentMode = 'gesture'; // 기본 모드를 'gesture'로 설정
-            octive='3'
 
             gestureModeButton.addEventListener('click', function () {
                 gestureModeButton.classList.add('btn-primary');
@@ -312,12 +311,12 @@
                 poseModeButton.classList.remove('btn-primary');
 
                 currentMode = 'gesture'; // 제스처 모드 선택 시
-                octive='3'
 
                 document.getElementById('video_movement').src = "{{ url_for('processed_video_gesture') }}";
                 updateButtonColors(gesturePreset);
 
                 $('#video_movement').attr('src', "{{ url_for('processed_video_gesture') }}");
+                $('#video_movement2').attr('src', "{{ url_for('processed_video_gesture_2') }}");
                 $('#video_movement2').show()
             });
 
@@ -329,12 +328,12 @@
                 gestureModeButton.classList.remove('btn-primary');
 
                 currentMode = 'pose'; // 제스처 모드 선택 시
-                octive='3'
 
                 document.getElementById('video_movement').src = "{{ url_for('processed_video_pose') }}";
                 updateButtonColors(posePreset);
 
                 $('#video_movement').attr('src', "{{ url_for('processed_video_pose') }}");
+                $("#video_movement2").attr('src',"");
                 $('#video_movement2').hide()
             });
         });
@@ -413,7 +412,7 @@
                 $.ajax({
                     url: "/Movement_play",
                     type: "POST",
-                    data: { isRecording: "True" },
+                    data: { isRecording: "True", mode: currentMode },
                     success: function (response) {
                         console.log("성공:", response);
                         $('#myDiv').show();
@@ -429,7 +428,7 @@
                 $.ajax({
                     url: "/Movement_play",
                     type: "POST",
-                    data: { isRecording: "False" },
+                    data: { isRecording: "False", mode: currentMode },
                     success: function (response) {
                         console.log("성공:", response);
                     },
@@ -462,7 +461,7 @@
                 $.ajax({
                     url: "/Movement_play",
                     type: "POST",
-                    data: {preset: buttonValue},
+                    data: {preset: buttonValue, mode: currentMode},
                     success: function(response) {
                         console.log("성공:", response);
                     },
