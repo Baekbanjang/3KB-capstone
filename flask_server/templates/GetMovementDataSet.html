@@ -67,10 +67,10 @@
 
     <!-- 여기에 버튼 추가 -->
     <div class="mode-buttons">
-        <button id="GestureModeButton" class="btn btn-primary" value="gesture">손동작 모드</button>
-        <button id="PoseModeButton" class="btn btn-secondary" value="pose">몸동작 모드</button>
+        <button id="GestureModeButton" class="btn btn-primary" value="gesture">제스처 모드</button>
+        <button id="PoseModeButton" class="btn btn-secondary" value="pose">포즈 모드</button>
     </div>
-    
+
     <!-- 프리셋 버튼 -->
     <div class="container mt-5">
         <h2>프리셋</h2>
@@ -91,150 +91,33 @@
                     <th>삭제</th>
                 </tr>
             </thead>
-            <tbody>
-                <tr>
-                    <td>도</td>
-                    <td><span id="poseDescription0">..</span>
-                        <input type="text" id="poseInput0" style="display:none;">
-                    </td>
-                    <td><button class="LiveButton" value="0">녹화하기</button></td>
-                    <td><button class="DeleteButton" value="0">삭제하기</button></td>
-                    <td><button onclick="editPose(0)">수정</button>
-                        <button onclick="savePose(0)" style="display:none;">저장</button>
+            <tbody id="presetData">
+                {% for data in pose_data %}
+                <tr id="row_pose_{{ data.id }}">
+                    <td>{{ data.name }}</td>
+                    <td>
+                        <span id="poseDescription{{ data.id }}">{{ data.description }}</span>
+                        <input type="text" id="poseInput{{ data.id }}" style="display:none;">
                     </td>
                     <td>
-                        <div id="myDiv0" style="display: none;">
-                            <img id="video_gesture0" src="" /> <br>
-                            <img id="video_pose0" src=""/> <br>
+                        <button class="LiveButton" value="{{ data.id }}">녹화하기</button>
+                    </td>
+                    <td>
+                        <button class="DeleteButton" value="{{ data.id }}">삭제하기</button>
+                    </td>
+                    <td>
+                        <button onclick="editPose({{ data.id }})">수정</button>
+                        <button onclick="savePose({{ data.id }})" style="display:none;">저장</button>
+                    </td>
+                    <td>
+                        <div id="myDiv{{ data.id }}" style="display: none;">
+                            <img id="video_gesture{{ data.id }}" src="" /> <br>
+                            <img id="video_pose{{ data.id }}" src=""/> <br>
                             <button class="stopButton" value="True">녹화 중지하기</button>
                         </div>
                     </td>
                 </tr>
-                <tr>
-                    <td>레</td>
-                    <td><span id="poseDescription1">..</span>
-                        <input type="text" id="poseInput1" style="display:none;">
-                    </td>
-                    <td><button class="LiveButton" value="1">녹화하기</button></td>
-                    <td><button class="DeleteButton" value="1">삭제하기</button></td>
-                    <td><button onclick="editPose(1)">수정</button>
-                        <button onclick="savePose(1)" style="display:none;">저장</button>
-                    </td>
-                    <td>
-                        <div id="myDiv1" style="display: none;">
-                            <img id="video_gesture1" src="" /> <br>
-                            <img id="video_pose1" src=""/> <br>
-                            <button class="stopButton" value="True">녹화 중지하기</button>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>미</td>
-                    <td><span id="poseDescription2">..</span>
-                        <input type="text" id="poseInput2" style="display:none;">
-                    </td>
-                    <td><button class="LiveButton" value="2">녹화하기</button></td>
-                    <td><button class="DeleteButton" value="2">삭제하기</button></td>
-                    <td><button onclick="editPose(2)">수정</button>
-                        <button onclick="savePose(2)" style="display:none;">저장</button>
-                    </td>
-                    <td>
-                        <div id="myDiv2" style="display: none;">
-                            <img id="video_gesture2" src="" /> <br>
-                            <img id="video_pose2" src=""/> <br>
-                            <button class="stopButton" value="True">녹화 중지하기</button>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>파</td>
-                    <td><span id="poseDescription3">..</span>
-                        <input type="text" id="poseInput3" style="display:none;">
-                    </td>
-                    <td><button class="LiveButton" value="3">녹화하기</button></td>
-                    <td><button class="DeleteButton" value="3">삭제하기</button></td>
-                    <td><button onclick="editPose(3)">수정</button>
-                        <button onclick="savePose(3)" style="display:none;">저장</button>
-                    </td>
-                    <td>
-                        <div id="myDiv3" style="display: none;">
-                            <img id="video_gesture3" src="" /> <br>
-                            <img id="video_pose3" src=""/> <br>
-                            <button class="stopButton" value="True">녹화 중지하기</button>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>솔</td>
-                    <td><span id="poseDescription4">..</span>
-                        <input type="text" id="poseInput4" style="display:none;">
-                    </td>
-                    <td><button class="LiveButton" value="4">녹화하기</button></td>
-                    <td><button class="DeleteButton" value="4">삭제하기</button></td>
-                    <td><button onclick="editPose(4)">수정</button>
-                        <button onclick="savePose(4)" style="display:none;">저장</button>
-                    </td>
-                    <td>
-                        <div id="myDiv4" style="display: none;">
-                            <img id="video_gesture4" src="" /> <br>
-                            <img id="video_pose4" src=""/> <br>
-                            <button class="stopButton" value="True">녹화 중지하기</button>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>라</td>
-                    <td><span id="poseDescription5">..</span>
-                        <input type="text" id="poseInput5" style="display:none;">
-                    </td>
-                    <td><button class="LiveButton" value="5">녹화하기</button></td>
-                    <td><button class="DeleteButton" value="5">삭제하기</button></td>
-                    <td><button onclick="editPose(5)">수정</button>
-                        <button onclick="savePose(5)" style="display:none;">저장</button>
-                    </td>
-                    <td>
-                        <div id="myDiv5" style="display: none;">
-                            <img id="video_gesture5" src="" /> <br>
-                            <img id="video_pose5" src=""/> <br>
-                            <button class="stopButton" value="True">녹화 중지하기</button>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>시</td>
-                    <td><span id="poseDescription6">..</span>
-                        <input type="text" id="poseInput6" style="display:none;">
-                    </td>
-                    <td><button class="LiveButton" value="6">녹화하기</button></td>
-                    <td><button class="DeleteButton" value="6">삭제하기</button></td>
-                    <td><button onclick="editPose(6)">수정</button>
-                        <button onclick="savePose(6)" style="display:none;">저장</button>
-                    </td>
-                    <td>
-                        <div id="myDiv6" style="display: none;">
-                            <img id="video_gesture6" src="" /> <br>
-                            <img id="video_pose6" src=""/> <br>
-                            <button class="stopButton" value="True">녹화 중지하기</button>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>정지 신호</td>
-                    <td><span id="poseDescription7">..</span>
-                        <input type="text" id="poseInput7" style="display:none;">
-                    </td>
-                    <td><button class="LiveButton" value="7">녹화하기</button></td>
-                    <td><button class="DeleteButton" value="7">삭제하기</button></td>
-                    <td><button onclick="editPose(7)">수정</button>
-                        <button onclick="savePose(7)" style="display:none;">저장</button>
-                    </td>
-                    <div id="myDiv7" style="display: none;">
-                        <img id="video_gesture7" src="" /> <br>
-                        <img id="video_pose7" src=""/> <br>
-                        <button class="stopButton" value="True">녹화 중지하기</button>
-                    </div>
-                    </td>
-                </tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>
@@ -246,25 +129,47 @@
             // 입력 필드와 저장 버튼을 보이게 합니다.
             document.getElementById('poseInput' + id).style.display = 'inline';
             document.getElementById('poseInput' + id).value = document.getElementById('poseDescription' + id).innerText;
-            document.querySelector(`[onclick="savePose(${id})"]`).style.display = 'inline';
+            document.querySelector(`#row_pose_${id} button[onclick="savePose(${id})"]`).style.display = 'inline';
 
             // 기존 텍스트와 수정 버튼을 숨깁니다.
             document.getElementById('poseDescription' + id).style.display = 'none';
-            document.querySelector(`[onclick="editPose(${id})"]`).style.display = 'none';
+            document.querySelector(`#row_pose_${id} button[onclick="editPose(${id})"]`).style.display = 'none';
         }
 
         function savePose(id) {
             // 입력 필드에서 텍스트를 가져와서 span 요소에 설정합니다.
             var inputVal = document.getElementById('poseInput' + id).value;
+
+            // URL-encoded 형식으로 데이터를 전송
+            var formData = new URLSearchParams();
+            formData.append('id', id);
+            formData.append('mode', currentMode);
+            formData.append('inputVal', inputVal);
+
+            fetch('/save_pose', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: formData.toString()
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+
             document.getElementById('poseDescription' + id).innerText = inputVal;
 
             // 텍스트와 수정 버튼을 다시 보이게 합니다.
             document.getElementById('poseDescription' + id).style.display = 'inline';
-            document.querySelector(`[onclick="editPose(${id})"]`).style.display = 'inline';
+            document.querySelector(`#row_pose_${id} button[onclick="editPose(${id})"]`).style.display = 'inline';
 
             // 입력 필드와 저장 버튼을 숨깁니다.
             document.getElementById('poseInput' + id).style.display = 'none';
-            document.querySelector(`[onclick="savePose(${id})"]`).style.display = 'none';
+            document.querySelector(`#row_pose_${id} button[onclick="savePose(${id})"]`).style.display = 'none';
         }
 
         function updateButtonColors(preset) {
@@ -296,6 +201,46 @@
 
                 currentMode = 'gesture'; // 제스처 모드 선택 시
                 updateButtonColors(gesturePreset);
+                $.ajax({
+                    url: "/Get_AllMovements",
+                    type: "POST",
+                    data: { mode: currentMode },
+                    success: function (response) {
+                        var tbody = $('#presetData');
+                        tbody.empty(); // 기존 내용을 지우고
+                        response.forEach(function(item) {
+                            var row = `<tr id="row_pose_${item.id}">
+                                <td>${item.name}</td>
+                                <td>
+                                    <span id="poseDescription${item.id}">${item.description}</span>
+                                    <input type="text" id="poseInput${item.id}" style="display:none;">
+                                </td>
+                                <td>
+                                    <button class="LiveButton" value="${item.id}">녹화하기</button>
+                                </td>
+                                <td>
+                                    <button class="DeleteButton" value="${item.id}">삭제하기</button>
+                                </td>
+                                <td>
+                                    <button onclick="editPose(${item.id})">수정</button>
+                                    <button onclick="savePose(${item.id})" style="display:none;">저장</button>
+                                </td>
+                                <td>
+                                    <div id="myDiv${item.id}" style="display: none;">
+                                        <img id="video_gesture${item.id}" src="" /> <br>
+                                        <img id="video_pose${item.id}" src=""/> <br>
+                                        <button class="stopButton" value="True">녹화 중지하기</button>
+                                    </div>
+                                </td>
+                            </tr>`;
+                        tbody.append(row);
+                    });
+                        console.log("성공:", response);
+                    },
+                    error: function (error) {
+                        console.log("오류:", error);
+                    }
+                });
             });
 
             poseModeButton.addEventListener('click', function () {
@@ -307,17 +252,64 @@
 
                 currentMode = 'pose'; // 제스처 모드 선택 시
                 updateButtonColors(posePreset);
+                $.ajax({
+                    url: "/Get_AllMovements",
+                    type: "POST",
+                    data: { mode: currentMode },
+                    success: function (response) {
+                        var tbody = $('#presetData');
+                        tbody.empty(); // 기존 내용을 지우고
+                        response.forEach(function(item) {
+                            var row = `<tr id="row_pose_${item.id}">
+                                <td>${item.name}</td>
+                                <td>
+                                    <span id="poseDescription${item.id}">${item.description}</span>
+                                    <input type="text" id="poseInput${item.id}" style="display:none;">
+                                </td>
+                                <td>
+                                    <button class="LiveButton" value="${item.id}">녹화하기</button>
+                                </td>
+                                <td>
+                                    <button class="DeleteButton" value="${item.id}">삭제하기</button>
+                                </td>
+                                <td>
+                                    <button onclick="editPose(${item.id})">수정</button>
+                                    <button onclick="savePose(${item.id})" style="display:none;">저장</button>
+                                </td>
+                                <td>
+                                    <div id="myDiv${item.id}" style="display: none;">
+                                        <img id="video_gesture${item.id}" src="" /> <br>
+                                        <img id="video_pose${item.id}" src=""/> <br>
+                                        <button class="stopButton" value="True">녹화 중지하기</button>
+                                    </div>
+                                </td>
+                            </tr>`;
+                        tbody.append(row);
+                    });
+                        console.log("성공:", response);
+                    },
+                    error: function (error) {
+                        console.log("오류:", error);
+                    }
+                });
+            });
+
+            document.querySelectorAll('.PresetButton').forEach(button => {
+                if (button.value == gesturePreset) {
+                    button.classList.remove('btn-primary');
+                    button.classList.add('btn-success');
+                }
             });
         });
 
         // Ajax를 사용하여 Flask로 데이터를 비동기적으로 전송하는 함수
         $(document).ready(function () {
-            // 초기 프리셋 값에 따라 버튼 색 변경
             $('.PresetButton').each(function() {
                 if ($(this).val() == gesturePreset) {
                     $(this).removeClass('btn-primary').addClass('btn-success');
                 }
             });
+
             $('.PresetButton').click(function () {
                 var buttonValue = $(this).val();
                 console.log("버튼 값:", buttonValue);
@@ -334,6 +326,35 @@
                     type: "POST",
                     data: { preset: buttonValue, mode: currentMode },
                     success: function (response) {
+                        var tbody = $('#presetData');
+                        tbody.empty(); // 기존 내용을 지우고
+                        response.forEach(function(item) {
+                            var row = `<tr id="row_pose_${item.id}">
+                                <td>${item.name}</td>
+                                <td>
+                                    <span id="poseDescription${item.id}">${item.description}</span>
+                                    <input type="text" id="poseInput${item.id}" style="display:none;">
+                                </td>
+                                <td>
+                                    <button class="LiveButton" value="${item.id}">녹화하기</button>
+                                </td>
+                                <td>
+                                    <button class="DeleteButton" value="${item.id}">삭제하기</button>
+                                </td>
+                                <td>
+                                    <button onclick="editPose(${item.id})">수정</button>
+                                    <button onclick="savePose(${item.id})" style="display:none;">저장</button>
+                                </td>
+                                <td>
+                                    <div id="myDiv${item.id}" style="display: none;">
+                                        <img id="video_gesture${item.id}" src="" /> <br>
+                                        <img id="video_pose${item.id}" src=""/> <br>
+                                        <button class="stopButton" value="True">녹화 중지하기</button>
+                                    </div>
+                                </td>
+                            </tr>`;
+                        tbody.append(row);
+                    });
                         console.log("성공:", response);
                     },
                     error: function (error) {
@@ -341,7 +362,8 @@
                     }
                 });
             });
-            $('.LiveButton').click(function () {
+
+            $('#presetData').on('click', '.LiveButton', function () {
                 var buttonValue = $(this).val();
                 console.log("버튼 값:", buttonValue);
                 $.ajax({
@@ -357,7 +379,8 @@
                     }
                 });
             });
-            $('.DeleteButton').click(function () {
+
+            $('#presetData').on('click', '.DeleteButton', function() {
                 var buttonValue = $(this).val();
                 $.ajax({
                     url: "/Get_AllMovements",
@@ -371,7 +394,8 @@
                     }
                 });
             });
-            $('.stopButton').click(function () {
+            
+            $('#presetData').on('click', '.stopButton', function() {
                 var stopSign = $(this).val();
                 $.ajax({
                     url: "/Get_AllMovements",
@@ -383,6 +407,54 @@
                     },
                     error: function (error) {
                         console.log("오류:", error);
+                    }
+                });
+            });
+
+            $("#resetButton").click(function(){
+                currentMode = "gesture";
+                gesturePreset = '1';
+                posePreset = '1';
+                $('#GestureModeButton').addClass('btn-primary').removeClass('btn-secondary');
+                $('#PoseModeButton').addClass('btn-secondary').removeClass('btn-primary');
+                $.ajax({
+                    url: "/reset",
+                    type: "POST",
+                    contentType: "application/json",
+                    success: function (response) {
+                        var tbody = $('#presetData');
+                        tbody.empty(); // 기존 내용을 지우고
+                        response.forEach(function(item) {
+                            var row = `<tr id="row_pose_${item.id}">
+                                <td>${item.name}</td>
+                                <td>
+                                    <span id="poseDescription${item.id}">${item.description}</span>
+                                    <input type="text" id="poseInput${item.id}" style="display:none;">
+                                </td>
+                                <td>
+                                    <button class="LiveButton" value="${item.id}">녹화하기</button>
+                                </td>
+                                <td>
+                                    <button class="DeleteButton" value="${item.id}">삭제하기</button>
+                                </td>
+                                <td>
+                                    <button onclick="editPose(${item.id})">수정</button>
+                                    <button onclick="savePose(${item.id})" style="display:none;">저장</button>
+                                </td>
+                                <td>
+                                    <div id="myDiv${item.id}" style="display: none;">
+                                        <img id="video_gesture${item.id}" src="" /> <br>
+                                        <img id="video_pose${item.id}" src=""/> <br>
+                                        <button class="stopButton" value="True">녹화 중지하기</button>
+                                    </div>
+                                </td>
+                            </tr>`;
+                        tbody.append(row);
+                    });
+                        console.log(response);
+                    },
+                    error: function(xhr, status, error){
+                        console.error("Error: ", status, error);
                     }
                 });
             });

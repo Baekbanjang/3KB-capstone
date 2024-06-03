@@ -52,6 +52,7 @@ pose_code = None
 isStop = False
 isRecording = None
 instrument_code = '0'
+#octave_code='5'
 gesture_preset = '1'
 pose_preset = '1'
 
@@ -67,7 +68,7 @@ play_time = None
 
 code = {
     '0':'c_low', '1':'d', '2':'e', '3':'f', '4':'g',
-    '5':'a', '6':'b', '7':'stop'
+    '5':'a', '6':'b', '7':'stop', '8': 'octaveup', '9': 'octavedown'
 }
 
 mode = {
@@ -82,15 +83,90 @@ instrument = {
     '4': "Flute"
 }
 
-sounds = {
-    0: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/c_low.ogg'),
-    1: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/d.ogg'),
-    2: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/e.ogg'),
-    3: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/f.ogg'),
-    4: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/g.ogg'),
-    5: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/a.ogg'),
-    6: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/b.ogg')
+octave = {
+    '1':'1','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7'
 }
+
+#악기안에 번호로 숫자 폴더를 만들어 음역 대 구분
+gesture_sounds1 = {
+    0: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/c.ogg'),
+    1: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/d.ogg'),
+    2: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/e.ogg'),
+    3: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/f.ogg'),
+    4: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/g.ogg'),
+    5: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/a.ogg'),
+    6: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/b.ogg')
+}
+
+gesture_sounds2 = {
+    0: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/c.ogg'),
+    1: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/d.ogg'),
+    2: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/e.ogg'),
+    3: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/f.ogg'),
+    4: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/g.ogg'),
+    5: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/a.ogg'),
+    6: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/b.ogg')
+}
+
+pose_sounds = {
+    0: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/c.ogg'),
+    1: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/d.ogg'),
+    2: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/e.ogg'),
+    3: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/f.ogg'),
+    4: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/g.ogg'),
+    5: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/a.ogg'),
+    6: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/b.ogg')
+}
+
+# Gesture 및 Pose 프리셋 설정
+GesturePresets = {
+    '1': [{"id": 0, "name": "도", "description": ".."}, {"id": 1, "name": "레", "description": ".."}, 
+        {"id": 2, "name": "미", "description": ".."}, {"id": 3, "name": "파", "description": ".."}, 
+        {"id": 4, "name": "솔", "description": ".."}, {"id": 5, "name": "라", "description": ".."}, 
+        {"id": 6, "name": "시", "description": ".."}, {"id": 7, "name": "정지 신호", "description": ".."}, 
+        {"id": 8, "name": "옥타브 업 신호", "description": ".."}, {"id": 9, "name": "옥타브 다운 신호", "description": ".."}],
+    '2': [{"id": 0, "name": "도", "description": ".."}, {"id": 1, "name": "레", "description": ".."}, 
+        {"id": 2, "name": "미", "description": ".."}, {"id": 3, "name": "파", "description": ".."}, 
+        {"id": 4, "name": "솔", "description": ".."}, {"id": 5, "name": "라", "description": ".."}, 
+        {"id": 6, "name": "시", "description": ".."}, {"id": 7, "name": "정지 신호", "description": ".."}, 
+        {"id": 8, "name": "옥타브 업 신호", "description": ".."}, {"id": 9, "name": "옥타브 다운 신호", "description": ".."}],
+    '3': [{"id": 0, "name": "도", "description": ".."}, {"id": 1, "name": "레", "description": ".."}, 
+        {"id": 2, "name": "미", "description": ".."}, {"id": 3, "name": "파", "description": ".."}, 
+        {"id": 4, "name": "솔", "description": ".."}, {"id": 5, "name": "라", "description": ".."}, 
+        {"id": 6, "name": "시", "description": ".."}, {"id": 7, "name": "정지 신호", "description": ".."}, 
+        {"id": 8, "name": "옥타브 업 신호", "description": ".."}, {"id": 9, "name": "옥타브 다운 신호", "description": ".."}],
+    '4': [{"id": 0, "name": "도", "description": ".."}, {"id": 1, "name": "레", "description": ".."}, 
+        {"id": 2, "name": "미", "description": ".."}, {"id": 3, "name": "파", "description": ".."}, 
+        {"id": 4, "name": "솔", "description": ".."}, {"id": 5, "name": "라", "description": ".."}, 
+        {"id": 6, "name": "시", "description": ".."}, {"id": 7, "name": "정지 신호", "description": ".."}, 
+        {"id": 8, "name": "옥타브 업 신호", "description": ".."}, {"id": 9, "name": "옥타브 다운 신호", "description": ".."}]
+}
+
+PosePresets = {
+    '1': [{"id": 0, "name": "도", "description": ".."}, {"id": 1, "name": "레", "description": ".."}, 
+        {"id": 2, "name": "미", "description": ".."}, {"id": 3, "name": "파", "description": ".."}, 
+        {"id": 4, "name": "솔", "description": ".."}, {"id": 5, "name": "라", "description": ".."}, 
+        {"id": 6, "name": "시", "description": ".."}, {"id": 7, "name": "정지 신호", "description": ".."}, 
+        {"id": 8, "name": "옥타브 업 신호", "description": ".."}, {"id": 9, "name": "옥타브 다운 신호", "description": ".."}],
+    '2': [{"id": 0, "name": "도", "description": ".."}, {"id": 1, "name": "레", "description": ".."}, 
+        {"id": 2, "name": "미", "description": ".."}, {"id": 3, "name": "파", "description": ".."}, 
+        {"id": 4, "name": "솔", "description": ".."}, {"id": 5, "name": "라", "description": ".."}, 
+        {"id": 6, "name": "시", "description": ".."}, {"id": 7, "name": "정지 신호", "description": ".."}, 
+        {"id": 8, "name": "옥타브 업 신호", "description": ".."}, {"id": 9, "name": "옥타브 다운 신호", "description": ".."}],
+    '3': [{"id": 0, "name": "도", "description": ".."}, {"id": 1, "name": "레", "description": ".."}, 
+        {"id": 2, "name": "미", "description": ".."}, {"id": 3, "name": "파", "description": ".."}, 
+        {"id": 4, "name": "솔", "description": ".."}, {"id": 5, "name": "라", "description": ".."}, 
+        {"id": 6, "name": "시", "description": ".."}, {"id": 7, "name": "정지 신호", "description": ".."}, 
+        {"id": 8, "name": "옥타브 업 신호", "description": ".."}, {"id": 9, "name": "옥타브 다운 신호", "description": ".."}],
+    '4': [{"id": 0, "name": "도", "description": ".."}, {"id": 1, "name": "레", "description": ".."}, 
+        {"id": 2, "name": "미", "description": ".."}, {"id": 3, "name": "파", "description": ".."}, 
+        {"id": 4, "name": "솔", "description": ".."}, {"id": 5, "name": "라", "description": ".."}, 
+        {"id": 6, "name": "시", "description": ".."}, {"id": 7, "name": "정지 신호", "description": ".."}, 
+        {"id": 8, "name": "옥타브 업 신호", "description": ".."}, {"id": 9, "name": "옥타브 다운 신호", "description": ".."}]
+}
+
+FirstGesturePresets = GesturePresets
+FirstPosePresets = PosePresets
 
 # 현재 날짜 및 시간을 포맷에 맞게 가져오기
 current_time = None
@@ -215,16 +291,42 @@ output_directory = "recordings"
 if not os.path.exists(output_directory):
     os.makedirs(output_directory)
 
-def update_sounds():
-    global instrument_code, sounds
-    sounds = {
-        0: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/c_low.ogg'),
-        1: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/d.ogg'),
-        2: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/e.ogg'),
-        3: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/f.ogg'),
-        4: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/g.ogg'),
-        5: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/a.ogg'),
-        6: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/b.ogg')
+def update_gesture_sounds1(octave_code='4'):
+    global instrument_code, gesture_sounds1
+    gesture_sounds1 = {
+        0: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/c.ogg'),
+        1: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/d.ogg'),
+        2: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/e.ogg'),
+        3: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/f.ogg'),
+        4: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/g.ogg'),
+        5: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/a.ogg'),
+        6: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/b.ogg')
+
+    }
+
+def update_gesture_sounds2(octave_code='4'):
+    global instrument_code, gesture_sounds2
+    gesture_sounds2 = {
+        0: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/c.ogg'),
+        1: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/d.ogg'),
+        2: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/e.ogg'),
+        3: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/f.ogg'),
+        4: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/g.ogg'),
+        5: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/a.ogg'),
+        6: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/b.ogg')
+
+    }
+
+def update_pose_sounds(octave_code='4'):
+    global instrument_code, pose_sounds
+    pose_sounds = {
+        0: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/c.ogg'),
+        1: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/d.ogg'),
+        2: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/e.ogg'),
+        3: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/f.ogg'),
+        4: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/g.ogg'),
+        5: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/a.ogg'),
+        6: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/b.ogg')
     }
 
 def calculateAngle(landmark1, landmark2, landmark3):
@@ -407,7 +509,8 @@ def load_and_train_knn(preset):
     return knn
 
 def gesture_gen():
-    global gesture_preset, sounds, isRecording, out, height, width, fps
+    global gesture_preset, gesture_sounds1, isRecording, out, height, width, fps
+    octave_code=5
     current_gesture_preset = gesture_preset
     knn = load_and_train_knn(current_gesture_preset)
 
@@ -484,10 +587,22 @@ def gesture_gen():
 
                         current_channel.stop()
                         
-                        if idx in sounds:
-                            sound = sounds[idx]
+                        if idx in gesture_sounds1:
+                            sound = gesture_sounds1[idx]
                             sound.set_volume(0.3)
                             current_channel.play(sound)
+                        elif idx ==8:
+                            octave_code += 1
+                            if octave_code > 7:  # 여기서 2는 octave_code의 최대값
+                                octave_code = 7  # 최대값 초과 시 octave_code를 최대값으로 설정
+                            octave_code_str = str(octave_code)
+                            update_gesture_sounds1(octave_code_str)
+                        elif idx ==9:
+                            octave_code -= 1
+                            if octave_code < 1:  # 여기서 2는 octave_code의 최대값
+                                octave_code = 1  # 최대값 초과 시 octave_code를 최대값으로 설정
+                            octave_code_str = str(octave_code)
+                            update_gesture_sounds1(octave_code_str)
                         elif idx == 13:
                             pygame.mixer.music.stop()
                         temp_idx = idx
@@ -502,7 +617,9 @@ def gesture_gen():
         
 # 웹캠
 def gesture_gen_2():
-    global gesture_preset, sounds, isRecording, out2, height, width, fps
+    global gesture_preset, gesture_sounds2, isRecording, out2, height, width, fps
+    octave_code=5
+
     current_gesture_preset = gesture_preset
     knn = load_and_train_knn(current_gesture_preset)
 
@@ -582,13 +699,24 @@ def gesture_gen_2():
 
                     current_channel.stop()
 
-                    if idx in sounds:
-                        sound = sounds[idx]
+                    if idx in gesture_sounds2:
+                        sound = gesture_sounds2[idx]
                         sound.set_volume(0.3)
                         current_channel.play(sound)
+                    elif idx ==8:
+                        octave_code += 1
+                        if octave_code > 7:  # 여기서 2는 octave_code의 최대값
+                            octave_code = 7  # 최대값 초과 시 octave_code를 최대값으로 설정
+                        octave_code_str = str(octave_code)
+                        update_gesture_sounds2(octave_code_str)
+                    elif idx ==9:
+                        octave_code -= 1
+                        if octave_code < 1:  # 여기서 2는 octave_code의 최대값
+                            octave_code = 1  # 최대값 초과 시 octave_code를 최대값으로 설정
+                        octave_code_str = str(octave_code)
+                        update_gesture_sounds2(octave_code_str)
                     elif idx == 13:
                         pygame.mixer.music.stop()
-
                     temp_idx = idx
 
         if isRecording:
@@ -603,7 +731,7 @@ def gesture_gen_2():
                b'Content-Type: image/jpeg\r\n\r\n' + frame2 + b'\r\n')
 
 def pose_gen():
-    global pose_preset, sounds, isRecording, out, height, width, fps
+    global pose_preset, pose_sounds, isRecording, out, height, width, fps
     def pose_load_and_train_knn(preset):        
         # 기존에 수집된 데이터셋 초기화
         file_path = 'data/pose/'+ preset +'/pose_angle_train.csv'
@@ -705,8 +833,8 @@ def pose_gen():
                 if temp_idx != idx :
                     temp_idx = idx
                     pygame.mixer.stop()
-                    if idx in sounds:
-                        sound = sounds[idx]
+                    if idx in pose_sounds:
+                        sound = pose_sounds[idx]
                         sound.set_volume(0.3)
                         sound.play()
                     elif idx == 13:
@@ -723,18 +851,18 @@ def pose_gen():
         
 @app.route('/Get_AllMovements', methods=['GET', 'POST'])
 def process_movement_data():
-    global gesture_code, gesture_preset, pose_code, pose_preset, isStop
-    if request.method == 'POST':
+    global gesture_code, gesture_preset, pose_code, pose_preset, isStop, GesturePresets, PosePresets, FirstGesturePresets, FirstPosePresets
+    if request.method == 'POST':        
         mode = request.form.get('mode')
-
         if (mode == "gesture"):
             if 'preset' in request.form:
                 gesture_preset = request.form['preset']
-                return render_template('GetMovementDataSet.html', message="프리셋 변경")
-
+                return jsonify(GesturePresets[gesture_preset])
+                        
             elif 'button_value' in request.form:
                 gesture_code = request.form['button_value']
                 session['button_value_received'] = True  # 세션에 상태 저장
+            
                 return render_template('GetMovementDataSet.html', message="웹캠 작동을 시작합니다.")
 
             elif 'stop_sign' in request.form and session.get('button_value_received'):
@@ -751,11 +879,13 @@ def process_movement_data():
                 except Exception as e:
                     print(f"파일 삭제 중 오류 발생: {e}")
                 return render_template('GetMovementDataSet.html')
+
+            return jsonify(GesturePresets[gesture_preset])
             
         if (mode == "pose"):
             if 'preset' in request.form:
                 pose_preset = request.form['preset']
-                return render_template('GetMovementDataSet.html', message="프리셋 변경")
+                return jsonify(PosePresets[pose_preset])
 
             elif 'button_value' in request.form:
                 pose_code = request.form['button_value']
@@ -777,7 +907,38 @@ def process_movement_data():
                     print(f"파일 삭제 중 오류 발생: {e}")
                 return render_template('GetMovementDataSet.html')
 
-    return render_template('GetMovementDataSet.html', gesture_preset=gesture_preset, pose_preset=pose_preset)
+            return jsonify(PosePresets[pose_preset])
+    return render_template('GetMovementDataSet.html', pose_data=GesturePresets[gesture_preset], gesture_preset=gesture_preset, pose_preset=pose_preset)
+
+@app.route('/save_pose', methods=['POST'])
+def save_pose():
+    id = request.form.get('id')
+    inputVal = request.form.get('inputVal')
+    
+    id = request.form.get('id')
+    mode = request.form.get('mode')
+    inputVal = request.form.get('inputVal')
+    if (mode == "gesture"):
+        for find_pose_presets in GesturePresets[gesture_preset]:
+            if find_pose_presets['id'] == int(id):
+                find_pose_presets['description'] = inputVal
+                break
+    if(mode == "pose") :
+        for find_pose_presets in PosePresets[pose_preset]:
+            if find_pose_presets['id'] == int(id):
+                find_pose_presets['description'] = inputVal
+                break
+    return render_template('GetMovementDataSet.html')
+
+@app.route('/reset', methods=['POST'])
+def reset():
+    global gesture_preset, pose_preset, GesturePresets, PosePresets, FirstGesturePresets, FirstPosePresets
+    gesture_preset = '1'
+    pose_preset = '1'
+    GesturePresets = FirstGesturePresets
+    PosePresets = FirstPosePresets
+    print(FirstGesturePresets)
+    return jsonify(GesturePresets[gesture_preset])
 
 @app.route('/Movement_play', methods=['GET', 'POST'])
 def hand_gestures_play():
@@ -833,7 +994,9 @@ def instrument_choice():
     if request.method == 'POST':
         if 'instrument_value' in request.form:
             instrument_code = request.form['instrument_value']
-            update_sounds()
+            update_gesture_sounds1()
+            update_gesture_sounds2()
+            update_pose_sounds()
             return render_template('instrumentChoice.html', message="악기 변경")
     return render_template('instrumentChoice.html')
 
@@ -858,11 +1021,6 @@ def view(video_id):
         return Response(generate(), mimetype='video/mp4')
     else:
         return 'File not found', 404
-
-#@app.route('/Playlist/download/<video_id>')
-#def download(video_id):
-#    video = fs.get(ObjectId(video_id))
-#    return send_file(video, attachment_filename=video.filename, as_attachment=True)
 
 @app.route('/Playlist/rename/<video_id>', methods=['POST'])
 def rename(video_id):
@@ -941,7 +1099,7 @@ def serve_music_file(instrument_code, filename):
 
 @app.route('/')
 def get_main():
-    return render_template('main.html')
+    return render_template('MovementPlay.html')
 
 if __name__ == '__main__':
     app.run(threaded=True, debug=True)

@@ -8,7 +8,7 @@
 
     <!-- 부트 스트랩 css-->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <!-- 부트 스트랩 JS -->
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
@@ -39,7 +39,7 @@
         
         .button-container {
             flex-direction: column;
-            margin-bottom: 20px; /* 버튼 컨테이너 아래에 여백을 줍니다 */
+            margin-left: 20px;
             gap: 15px;
         }
 
@@ -48,6 +48,10 @@
             display: flex;
             justify-content: center;
             gap: 20px;
+        }
+
+        .preset-button-container{
+            margin-top: 10px;
         }
 
         .large-button {
@@ -72,10 +76,26 @@
             width: 200px; /* 너비를 줄여서 박스 크기 감소 */
         }
 
-        .metronome-container button {
+        .metronome-container button{
             margin: 5px;
             padding: 10px;
             font-size: 16px;
+        }
+
+        .container {
+            display: flex; /* Flexbox 레이아웃을 활성화합니다 */
+            flex-direction: column; /* 아이템들을 상하로 배치합니다 */
+            align-items: center; /* 아이템들을 가운데 정렬합니다 */
+        }
+
+        .description-box {
+            display: none; /* 처음에는 숨겨져 있음 */
+            width: 200px; /* 박스의 너비 */
+            border: 1px solid #000; /* 테두리 */
+            padding: 10px; /* 내부 여백 */
+            margin-top: 5px; /* 버튼과의 거리 */
+            background-color: #f9f9f9; /* 배경색 */
+            position: absolute; /* 절대 위치 */
         }
 
         #video-container {
@@ -90,15 +110,15 @@
         #video_movement {
             width: 600px;
             height: auto;
-            /*margin-left: 50px;*/
             margin-top: 20px;
+            border: 8px solid wheat; /* 검은색 실선 테두리 */
         }
 
         #video_movement2 {
             width: 600px;
             height: auto;
-            /*margin-left: 50px;*/
-            margin-top: 20px;
+            margin-top: 40px;
+            border: 8px solid wheat; /* 검은색 실선 테두리 */
         }
 
         #blur-background {
@@ -107,7 +127,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent effect */
+            background-color: rgba(0, 0, 0, 0.5); 
             display: none;
             justify-content: center;
             align-items: center;
@@ -126,8 +146,8 @@
 
         #close-btn {
             position: absolute;
-            top: 5px; /* Adjust the position outside the video-popup */
-            right: 5px; /* Adjust the position outside the video-popup */
+            top: 5px; 
+            right: 5px; 
             background: red;
             color: white;
             border: none;
@@ -142,25 +162,9 @@
         }
 
         #help-btn {
-            padding: 10px 20px;
+            padding: -2px 3px;
             font-size: 16px;
             cursor: pointer;
-        }
-
-        .description-box {
-            display: none; /* 처음에는 숨겨져 있음 */
-            width: 200px; /* 박스의 너비 */
-            border: 1px solid #000; /* 테두리 */
-            padding: 10px; /* 내부 여백 */
-            margin-top: 5px; /* 버튼과의 거리 */
-            background-color: #f9f9f9; /* 배경색 */
-            position: absolute; /* 절대 위치 */
-        }
-
-        .container {
-            display: flex; /* Flexbox 레이아웃을 활성화합니다 */
-            flex-direction: column; /* 아이템들을 상하로 배치합니다 */
-            align-items: center; /* 아이템들을 가운데 정렬합니다 */
         }
     </style>
 </head>
@@ -183,7 +187,7 @@
                 <img id="video_movement" src="" />
             </div>
             
-            <div>
+            <div class = "preset-button-container">
                 <button class="btn btn-primary PresetButton" value=1>1</button>
                 <button class="btn btn-primary PresetButton" value=2>2</button>
                 <button class="btn btn-primary PresetButton" value=3>3</button>
@@ -206,7 +210,7 @@
         <!-- 녹화 및 정지 버튼을 가로로 정렬하기 위한 컨테이너 추가 -->
         <div class="button-container">
             <button id="RecordingTrueButton" class="btn large-button">
-                <i class="fas fa-circle"></i>
+                <i class="fas fa-video"></i>
             </button>
             <button id="RecordingFalseButton" class="btn large-button">
                 <i class="fas fa-stop-circle"></i>
@@ -231,12 +235,12 @@
 
     <div class="streaming-button-wrapper">
             <!-- 새로운 컨테이너 추가 -->
-    <div class="video2-right-container">
-        <div id="myDiv2" style="display: none">
-            <img id="video_movement2" src="" />
+            <div class="video2-right-container">
+                <div id="myDiv2" style="display: none">
+                    <img id="video_movement2" src="" />
+                </div>
+            </div>
         </div>
-    </div>
-    </div>
 
     <nav class="navbar fixed-top navbar-light bg-light">
         <a class="navbar-brand" href="#">Gesture Sound</a>
@@ -297,6 +301,7 @@
             gesturePreset = document.body.getAttribute('data-gesture-preset');
             posePreset = document.body.getAttribute('data-pose-preset');
             currentMode = 'gesture'; // 기본 모드를 'gesture'로 설정
+            octive='3'
 
             gestureModeButton.addEventListener('click', function () {
                 gestureModeButton.classList.add('btn-primary');
@@ -306,6 +311,7 @@
                 poseModeButton.classList.remove('btn-primary');
 
                 currentMode = 'gesture'; // 제스처 모드 선택 시
+                octive='3'
 
                 document.getElementById('video_movement').src = "{{ url_for('processed_video_gesture') }}";
                 updateButtonColors(gesturePreset);
@@ -322,7 +328,8 @@
                 gestureModeButton.classList.add('btn-secondary');
                 gestureModeButton.classList.remove('btn-primary');
 
-                currentMode = 'pose'; // 포즈 모드 선택 시
+                currentMode = 'pose'; // 제스처 모드 선택 시
+                octive='3'
 
                 document.getElementById('video_movement').src = "{{ url_for('processed_video_pose') }}";
                 updateButtonColors(posePreset);
@@ -389,25 +396,18 @@
             $('#video_movement').attr('src', "{{ url_for('processed_video_gesture') }}");
             $('#video_movement2').attr('src', "{{ url_for('processed_video_gesture_2') }}");
 
-        // jQuery를 사용하여 이벤트 핸들러 설정
-        $("#help-btn").click(function() {
-            // 버튼의 위치와 크기를 가져옴
-            var offset = $(this).offset();
-            var height = $(this).outerHeight();
+            // jQuery를 사용하여 이벤트 핸들러 설정
+            $("#help-btn").click(function() {
+                // 버튼의 위치와 크기를 가져옴
+                var offset = $(this).offset();
+                var height = $(this).outerHeight();
             
-            // 설명 박스를 버튼 바로 아래에 위치시킴
-            $("#description-box").css({
-                top: offset.top + height,
-                left: offset.left
-            }).toggle();
-        });
-
-            // 초기 프리셋 값에 따라 버튼 색 변경
-            $('.PresetButton').each(function() {
-                if ($(this).val() == gesturePreset) {
-                    $(this).removeClass('btn-primary').addClass('btn-success');
-                }
-            });
+                // 설명 박스를 버튼 바로 아래에 위치시킴
+                $("#description-box").css({
+                    top: offset.top + height,
+                    left: offset.left
+                 }).toggle();
+                });
 
             // 녹화 시작/정지 버튼 이벤트
             $('#RecordingTrueButton').click(function () {
@@ -439,6 +439,13 @@
                     }
                 });
             });
+            
+            // 초기 프리셋 값에 따라 버튼 색 변경
+            $('.PresetButton').each(function() {
+                if ($(this).val() == gesturePreset) {
+                    $(this).removeClass('btn-primary').addClass('btn-success');
+                }
+            });
 
             $('.PresetButton').click(function() {
                 var buttonValue = $(this).val();
@@ -456,7 +463,7 @@
                 $.ajax({
                     url: "/Movement_play",
                     type: "POST",
-                    data: { preset: buttonValue, mode: currentMode },
+                    data: {preset: buttonValue, mode: currentMode },
                     success: function(response) {
                         console.log("성공:", response);
                     },
