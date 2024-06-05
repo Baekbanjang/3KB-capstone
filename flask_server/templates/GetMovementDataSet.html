@@ -1,17 +1,16 @@
 <!DOCTYPE html>
 <html lang="ko">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Get Hand Gesture DataSet Test</title>
 
-    <!-- 부트 스트랩 css-->
+    <!-- 부트스트랩 CSS -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
-    <!-- 부트 스트랩 JS -->
+    <!-- 부트스트랩 JS -->
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
 
     <style>
@@ -19,8 +18,8 @@
             margin: auto;
         }
         .mode-buttons {
-            position: fixed; 
-            top: 20px; 
+            position: fixed;
+            top: 20px;
             right: 20px;
             padding-top: 70px;
             font-weight: bold;
@@ -37,8 +36,8 @@
         }
     </style>
 </head>
+<body data-gesture-preset="{{ gesture_preset }}" data-pose-preset="{{ pose_preset }}" current-mode="{{ mode }}">
 
-<body data-gesture-preset="{{ gesture_preset }}" data-pose-preset="{{ pose_preset }}">
     <nav class="navbar fixed-top navbar-light bg-light">
         <a class="navbar-brand" href="#">Gesture Sound</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse"
@@ -67,8 +66,8 @@
 
     <!-- 여기에 버튼 추가 -->
     <div class="mode-buttons">
-        <button id="GestureModeButton" class="btn btn-primary" value="gesture">제스처 모드</button>
-        <button id="PoseModeButton" class="btn btn-secondary" value="pose">포즈 모드</button>
+        <button id="GestureModeButton" class="btn btn-primary" value="gesture">손동작 모드</button>
+        <button id="PoseModeButton" class="btn btn-secondary" value="pose">몸동작 모드</button>
     </div>
 
     <!-- 프리셋 버튼 -->
@@ -82,7 +81,7 @@
     </div>
 
     <div class="container mt-3">
-        <table class="table">
+        <table class="table" id="dataTable">
             <thead>
                 <tr>
                     <th>계이름</th>
@@ -91,28 +90,31 @@
                     <th>삭제</th>
                 </tr>
             </thead>
-            <tbody id="presetData">
-                {% for data in pose_data %}
-                <tr id="row_pose_{{ data.id }}">
-                    <td>{{ data.name }}</td>
+            <tbody>
+                {% for idx, name in name_codes.items() %}
+                <tr data-idx="{{ idx }}">
+                    <td>{{ name }}</td>
+                    {% if image_status[idx] == True %}
                     <td>
-                        <span id="poseDescription{{ data.id }}">{{ data.description }}</span>
-                        <input type="text" id="poseInput{{ data.id }}" style="display:none;">
+                        {% if mode == "gesture" %}
+                        <img id="gesture_capture_{{ idx }}" src="{{ url_for('static', filename = '/capture/gesture/' + gesture_preset + '/capture_gesture_'+code[idx]+'.jpg') }}?timestamp={{ timestamp }}" width="320" height="200">
+                        {% else %}
+                        <img id="pose_capture_{{ idx }}" src="{{ url_for('static', filename = '/capture/pose/' + pose_preset + '/capture_pose_'+code[idx]+'.jpg') }}?timestamp={{ timestamp }}" width="320" height="200">
+                        {% endif %}
+                    </td>
+                    {% else %}
+                    <td></td>
+                    {% endif %}
+                    <td>
+                        <button class="LiveButton" value="{{ idx }}">녹화하기</button>
                     </td>
                     <td>
-                        <button class="LiveButton" value="{{ data.id }}">녹화하기</button>
+                        <button class="DeleteButton" value="{{ idx }}">삭제하기</button>
                     </td>
                     <td>
-                        <button class="DeleteButton" value="{{ data.id }}">삭제하기</button>
-                    </td>
-                    <td>
-                        <button onclick="editPose({{ data.id }})">수정</button>
-                        <button onclick="savePose({{ data.id }})" style="display:none;">저장</button>
-                    </td>
-                    <td>
-                        <div id="myDiv{{ data.id }}" style="display: none;">
-                            <img id="video_gesture{{ data.id }}" src="" /> <br>
-                            <img id="video_pose{{ data.id }}" src=""/> <br>
+                        <div id="myDiv{{ idx }}" style="display: none;">
+                            <img id="video_gesture{{ idx }}" src="" /> <br>
+                            <img id="video_pose{{ idx }}" src=""/> <br>
                             <button class="stopButton" value="True">녹화 중지하기</button>
                         </div>
                     </td>
@@ -121,56 +123,8 @@
             </tbody>
         </table>
     </div>
-
     <script>
-        var currentMode
-
-        function editPose(id) {
-            // 입력 필드와 저장 버튼을 보이게 합니다.
-            document.getElementById('poseInput' + id).style.display = 'inline';
-            document.getElementById('poseInput' + id).value = document.getElementById('poseDescription' + id).innerText;
-            document.querySelector(`#row_pose_${id} button[onclick="savePose(${id})"]`).style.display = 'inline';
-
-            // 기존 텍스트와 수정 버튼을 숨깁니다.
-            document.getElementById('poseDescription' + id).style.display = 'none';
-            document.querySelector(`#row_pose_${id} button[onclick="editPose(${id})"]`).style.display = 'none';
-        }
-
-        function savePose(id) {
-            // 입력 필드에서 텍스트를 가져와서 span 요소에 설정합니다.
-            var inputVal = document.getElementById('poseInput' + id).value;
-
-            // URL-encoded 형식으로 데이터를 전송
-            var formData = new URLSearchParams();
-            formData.append('id', id);
-            formData.append('mode', currentMode);
-            formData.append('inputVal', inputVal);
-
-            fetch('/save_pose', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: formData.toString()
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Success:', data);
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-            });
-
-            document.getElementById('poseDescription' + id).innerText = inputVal;
-
-            // 텍스트와 수정 버튼을 다시 보이게 합니다.
-            document.getElementById('poseDescription' + id).style.display = 'inline';
-            document.querySelector(`#row_pose_${id} button[onclick="editPose(${id})"]`).style.display = 'inline';
-
-            // 입력 필드와 저장 버튼을 숨깁니다.
-            document.getElementById('poseInput' + id).style.display = 'none';
-            document.querySelector(`#row_pose_${id} button[onclick="savePose(${id})"]`).style.display = 'none';
-        }
+        var currentMode;
 
         function updateButtonColors(preset) {
             const buttons = document.querySelectorAll('.PresetButton');
@@ -190,52 +144,25 @@
             const poseModeButton = document.getElementById('PoseModeButton');
             gesturePreset = document.body.getAttribute('data-gesture-preset');
             posePreset = document.body.getAttribute('data-pose-preset');
-            currentMode = 'gesture'; // 기본 모드를 'gesture'로 설정
+            currentMode = document.body.getAttribute('current-mode'); 
+
 
             gestureModeButton.addEventListener('click', function () {
-                gestureModeButton.classList.add('btn-primary');
-                gestureModeButton.classList.remove('btn-secondary');
+                document.getElementById('GestureModeButton').classList.add('btn-primary');
+                document.getElementById('GestureModeButton').classList.remove('btn-secondary');
 
-                poseModeButton.classList.add('btn-secondary');
-                poseModeButton.classList.remove('btn-primary');
+                document.getElementById('PoseModeButton').classList.add('btn-secondary');
+                document.getElementById('PoseModeButton').classList.remove('btn-primary');
 
-                currentMode = 'gesture'; // 제스처 모드 선택 시
+                currentMode = 'gesture';
                 updateButtonColors(gesturePreset);
                 $.ajax({
                     url: "/Get_AllMovements",
                     type: "POST",
                     data: { mode: currentMode },
                     success: function (response) {
-                        var tbody = $('#presetData');
-                        tbody.empty(); // 기존 내용을 지우고
-                        response.forEach(function(item) {
-                            var row = `<tr id="row_pose_${item.id}">
-                                <td>${item.name}</td>
-                                <td>
-                                    <span id="poseDescription${item.id}">${item.description}</span>
-                                    <input type="text" id="poseInput${item.id}" style="display:none;">
-                                </td>
-                                <td>
-                                    <button class="LiveButton" value="${item.id}">녹화하기</button>
-                                </td>
-                                <td>
-                                    <button class="DeleteButton" value="${item.id}">삭제하기</button>
-                                </td>
-                                <td>
-                                    <button onclick="editPose(${item.id})">수정</button>
-                                    <button onclick="savePose(${item.id})" style="display:none;">저장</button>
-                                </td>
-                                <td>
-                                    <div id="myDiv${item.id}" style="display: none;">
-                                        <img id="video_gesture${item.id}" src="" /> <br>
-                                        <img id="video_pose${item.id}" src=""/> <br>
-                                        <button class="stopButton" value="True">녹화 중지하기</button>
-                                    </div>
-                                </td>
-                            </tr>`;
-                        tbody.append(row);
-                    });
                         console.log("성공:", response);
+                        updatePage(response);
                     },
                     error: function (error) {
                         console.log("오류:", error);
@@ -244,49 +171,21 @@
             });
 
             poseModeButton.addEventListener('click', function () {
-                poseModeButton.classList.add('btn-primary');
-                poseModeButton.classList.remove('btn-secondary');
+                document.getElementById('PoseModeButton').classList.add('btn-primary');
+                document.getElementById('PoseModeButton').classList.remove('btn-secondary');
 
-                gestureModeButton.classList.add('btn-secondary');
-                gestureModeButton.classList.remove('btn-primary');
+                document.getElementById('GestureModeButton').classList.add('btn-secondary');
+                document.getElementById('GestureModeButton').classList.remove('btn-primary');
 
-                currentMode = 'pose'; // 제스처 모드 선택 시
+                currentMode = 'pose';
                 updateButtonColors(posePreset);
                 $.ajax({
                     url: "/Get_AllMovements",
                     type: "POST",
                     data: { mode: currentMode },
                     success: function (response) {
-                        var tbody = $('#presetData');
-                        tbody.empty(); // 기존 내용을 지우고
-                        response.forEach(function(item) {
-                            var row = `<tr id="row_pose_${item.id}">
-                                <td>${item.name}</td>
-                                <td>
-                                    <span id="poseDescription${item.id}">${item.description}</span>
-                                    <input type="text" id="poseInput${item.id}" style="display:none;">
-                                </td>
-                                <td>
-                                    <button class="LiveButton" value="${item.id}">녹화하기</button>
-                                </td>
-                                <td>
-                                    <button class="DeleteButton" value="${item.id}">삭제하기</button>
-                                </td>
-                                <td>
-                                    <button onclick="editPose(${item.id})">수정</button>
-                                    <button onclick="savePose(${item.id})" style="display:none;">저장</button>
-                                </td>
-                                <td>
-                                    <div id="myDiv${item.id}" style="display: none;">
-                                        <img id="video_gesture${item.id}" src="" /> <br>
-                                        <img id="video_pose${item.id}" src=""/> <br>
-                                        <button class="stopButton" value="True">녹화 중지하기</button>
-                                    </div>
-                                </td>
-                            </tr>`;
-                        tbody.append(row);
-                    });
                         console.log("성공:", response);
+                        updatePage(response);
                     },
                     error: function (error) {
                         console.log("오류:", error);
@@ -294,68 +193,26 @@
                 });
             });
 
-            document.querySelectorAll('.PresetButton').forEach(button => {
-                if (button.value == gesturePreset) {
-                    button.classList.remove('btn-primary');
-                    button.classList.add('btn-success');
-                }
-            });
-        });
+            // 페이지 로드 시 기본 프리셋 버튼 색상 업데이트
+            updateButtonColors(currentMode === 'gesture' ? gesturePreset : posePreset);
 
-        // Ajax를 사용하여 Flask로 데이터를 비동기적으로 전송하는 함수
-        $(document).ready(function () {
-            $('.PresetButton').each(function() {
-                if ($(this).val() == gesturePreset) {
-                    $(this).removeClass('btn-primary').addClass('btn-success');
-                }
-            });
-
+            // 버튼 클릭 이벤트 설정
             $('.PresetButton').click(function () {
                 var buttonValue = $(this).val();
-                console.log("버튼 값:", buttonValue);
                 if (currentMode === 'gesture') {
                     gesturePreset = buttonValue;
                 } else if (currentMode === 'pose') {
                     posePreset = buttonValue;
                 }
                 updateButtonColors(buttonValue);
-                $('.PresetButton').removeClass('btn-success').addClass('btn-primary');
-                $(this).removeClass('btn-primary').addClass('btn-success');
+
                 $.ajax({
                     url: "/Get_AllMovements",
                     type: "POST",
                     data: { preset: buttonValue, mode: currentMode },
                     success: function (response) {
-                        var tbody = $('#presetData');
-                        tbody.empty(); // 기존 내용을 지우고
-                        response.forEach(function(item) {
-                            var row = `<tr id="row_pose_${item.id}">
-                                <td>${item.name}</td>
-                                <td>
-                                    <span id="poseDescription${item.id}">${item.description}</span>
-                                    <input type="text" id="poseInput${item.id}" style="display:none;">
-                                </td>
-                                <td>
-                                    <button class="LiveButton" value="${item.id}">녹화하기</button>
-                                </td>
-                                <td>
-                                    <button class="DeleteButton" value="${item.id}">삭제하기</button>
-                                </td>
-                                <td>
-                                    <button onclick="editPose(${item.id})">수정</button>
-                                    <button onclick="savePose(${item.id})" style="display:none;">저장</button>
-                                </td>
-                                <td>
-                                    <div id="myDiv${item.id}" style="display: none;">
-                                        <img id="video_gesture${item.id}" src="" /> <br>
-                                        <img id="video_pose${item.id}" src=""/> <br>
-                                        <button class="stopButton" value="True">녹화 중지하기</button>
-                                    </div>
-                                </td>
-                            </tr>`;
-                        tbody.append(row);
-                    });
                         console.log("성공:", response);
+                        updatePage(response);
                     },
                     error: function (error) {
                         console.log("오류:", error);
@@ -363,9 +220,8 @@
                 });
             });
 
-            $('#presetData').on('click', '.LiveButton', function () {
+            $('.LiveButton').click(function () {
                 var buttonValue = $(this).val();
-                console.log("버튼 값:", buttonValue);
                 $.ajax({
                     url: "/Get_AllMovements",
                     type: "POST",
@@ -380,7 +236,7 @@
                 });
             });
 
-            $('#presetData').on('click', '.DeleteButton', function() {
+            $('.DeleteButton').click(function () {
                 var buttonValue = $(this).val();
                 $.ajax({
                     url: "/Get_AllMovements",
@@ -388,14 +244,15 @@
                     data: { delete_button_value: buttonValue, mode: currentMode },
                     success: function (response) {
                         console.log("성공:", response);
+                        updatePage(response);
                     },
                     error: function (error) {
                         console.log("오류:", error);
                     }
                 });
             });
-            
-            $('#presetData').on('click', '.stopButton', function() {
+
+            $('.stopButton').click(function () {
                 var stopSign = $(this).val();
                 $.ajax({
                     url: "/Get_AllMovements",
@@ -404,6 +261,7 @@
                     success: function (response) {
                         console.log("성공:", response);
                         divClear();
+                        updatePage(response);
                     },
                     error: function (error) {
                         console.log("오류:", error);
@@ -411,62 +269,106 @@
                 });
             });
 
-            $("#resetButton").click(function(){
+            $('#resetButton').click(function () {
                 currentMode = "gesture";
                 gesturePreset = '1';
                 posePreset = '1';
                 $('#GestureModeButton').addClass('btn-primary').removeClass('btn-secondary');
                 $('#PoseModeButton').addClass('btn-secondary').removeClass('btn-primary');
+                updateButtonColors(gesturePreset);
                 $.ajax({
                     url: "/reset",
                     type: "POST",
-                    contentType: "application/json",
+                    data: { mode: currentMode },
                     success: function (response) {
-                        var tbody = $('#presetData');
-                        tbody.empty(); // 기존 내용을 지우고
-                        response.forEach(function(item) {
-                            var row = `<tr id="row_pose_${item.id}">
-                                <td>${item.name}</td>
-                                <td>
-                                    <span id="poseDescription${item.id}">${item.description}</span>
-                                    <input type="text" id="poseInput${item.id}" style="display:none;">
-                                </td>
-                                <td>
-                                    <button class="LiveButton" value="${item.id}">녹화하기</button>
-                                </td>
-                                <td>
-                                    <button class="DeleteButton" value="${item.id}">삭제하기</button>
-                                </td>
-                                <td>
-                                    <button onclick="editPose(${item.id})">수정</button>
-                                    <button onclick="savePose(${item.id})" style="display:none;">저장</button>
-                                </td>
-                                <td>
-                                    <div id="myDiv${item.id}" style="display: none;">
-                                        <img id="video_gesture${item.id}" src="" /> <br>
-                                        <img id="video_pose${item.id}" src=""/> <br>
-                                        <button class="stopButton" value="True">녹화 중지하기</button>
-                                    </div>
-                                </td>
-                            </tr>`;
-                        tbody.append(row);
-                    });
-                        console.log(response);
+                        console.log("성공:", response);
+                        updatePage(response);
                     },
-                    error: function(xhr, status, error){
-                        console.error("Error: ", status, error);
+                    error: function (error) {
+                        console.log("오류:", error);
                     }
                 });
             });
         });
+
+        function updatePage(response) {
+            if (!response.data) {
+                console.error('Invalid response data');
+                return;
+            }
+            response.data.forEach(function (item) {
+                const row = document.querySelector(`tr[data-idx="${item.idx}"]`);
+                const imgCell = row.querySelector('td:nth-child(2)');
+                const timestamp = new Date().getTime();
+                if (item.image_status) {
+                    imgCell.innerHTML = currentMode === 'gesture' ? 
+                        `<img id="gesture_capture_${item.idx}" src="${item.image_url}?timestamp=${timestamp}" width="320" height="200">` : 
+                        `<img id="pose_capture_${item.idx}" src="${item.image_url}?timestamp=${timestamp}" width="320" height="200">`;
+                } else {
+                    imgCell.innerHTML = ``;
+                }
+            });
+            // 이벤트 리스너를 다시 설정합니다.
+            setEventListeners();
+        }
+
+        function setEventListeners() {
+            $('.LiveButton').off('click').on('click', function () {
+                var buttonValue = $(this).val();
+                $.ajax({
+                    url: "/Get_AllMovements",
+                    type: "POST",
+                    data: { button_value: buttonValue, mode: currentMode },
+                    success: function (response) {
+                        console.log("성공:", response);
+                        updatePage(response);
+                        toggleDivVisibility(buttonValue);
+                    },
+                    error: function (error) {
+                        console.log("오류:", error);
+                    }
+                });
+            });
+
+            $('.DeleteButton').off('click').on('click', function () {
+                var buttonValue = $(this).val();
+                $.ajax({
+                    url: "/Get_AllMovements",
+                    type: "POST",
+                    data: { delete_button_value: buttonValue, mode: currentMode },
+                    success: function (response) {
+                        console.log("성공:", response);
+                        updatePage(response);
+                    },
+                    error: function (error) {
+                        console.log("오류:", error);
+                    }
+                });
+            });
+
+            $('.stopButton').off('click').on('click', function () {
+                var stopSign = $(this).val();
+                $.ajax({
+                    url: "/Get_AllMovements",
+                    type: "POST",
+                    data: { stop_sign: stopSign, mode: currentMode },
+                    success: function (response) {
+                        console.log("성공:", response);
+                        updatePage(response);
+                        divClear();
+                    },
+                    error: function (error) {
+                        console.log("오류:", error);
+                    }
+                });
+            });
+        }
 
         function toggleDivVisibility(buttonValue) {
             // 모든 버튼의 영상을 숨깁니다.
             $('[id^="video_gesture"], [id^="video_pose"]').attr('src', '');
 
             // 현재 클릭한 버튼에 해당하는 영상만 보여줍니다.
-            //$('#video_gesture' + buttonValue).attr('src', "/get_video_gesture");
-            // 현재 모드에 맞는 비디오 소스와 태그 선택
             var videoId = currentMode === "gesture" ? "#video_gesture" : "#video_pose";
             var videoSrc = currentMode === "gesture" ? "/get_video_gesture" : "/get_video_pose";
             $(videoId + buttonValue).attr('src', videoSrc).show();
@@ -475,19 +377,17 @@
             $('[id^="myDiv"]').hide().removeClass('fixedStreaming');
 
             // 현재 클릭한 버튼에 해당하는 영역만 보여줍니다.
-            var showDiv=$('#myDiv' + buttonValue).show();
-            showDiv.show().addClass('fixedStreaming')
+            var showDiv = $('#myDiv' + buttonValue).show();
+            showDiv.show().addClass('fixedStreaming');
         }
 
         function divClear() {
             // 모든 버튼의 영상을 숨깁니다.
             $('[id^="video_gesture"], [id^="video_pose"]').attr('src', '');
             
-
             // 모든 버튼 영역을 숨깁니다.
             $('[id^="myDiv"]').hide().removeClass('fixedStreaming');
         }
     </script>
 </body>
-
 </html>

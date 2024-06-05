@@ -6,7 +6,7 @@
         <title>Instrument Choice</title>
         <!-- 부트 스트랩 css-->
         <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet">
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
         
         <!-- 부트 스트랩 JS -->
@@ -21,27 +21,43 @@
             justify-content: center;
             align-items: center;
             padding-top: 30px; /* 상단 네비게이션 바와 겹치지 않도록 패딩 추가 */
+            flex-wrap: wrap; 
         }
 
         .instrument-item {
             border: 1px solid #ccc; /* 테두리 설정 */
             border-radius: 10px; /* 모서리 둥글게 */
-            padding: 20px; /* 내부 여백 */
-            margin: 10px; /* 외부 여백 */
-            width: 200px; /* 너비 설정 */
+            padding: 30px; /* 내부 여백 */
+            margin: 20px; /* 외부 여백 */
+            font-size: 1.2em;
             text-align: center; /* 텍스트 가운데 정렬 */
             background-color: #CAF0F8; /* 배경색 설정 */
             font-weight: bold; /* 글씨 두껍게 */
         }
 
+        .instrument-row {
+            display: flex;
+            justify-content: center; /* 가운데 정렬 */
+            flex-wrap: wrap; /* 필요시 줄 바꿈 */
+            width: 100%; /* 컨테이너 너비에 맞춤 */
+        }
+
+        .instrument-set {
+            display: inline-flex; /* 인라인 블록 형태의 flex로 설정 */
+            margin: 20px; /* 각 세트 사이의 간격을 조정 */
+        }
+
         .page-title {
             padding-top: 80px; /* 네비게이션 바 높이보다 조금 더 큰 값으로 설정해 보세요 */
             text-align: center; /* 제목을 가운데 정렬 */
+            font-weight: bold;
         }
 
-        #audioPlayer {
-            display: none;
+        .headphone-button {
+            padding: 5px 10px; /* 상하 패딩을 줄여서 세로 크기 조정 */
+            font-size: 0.8em; /* 필요하다면 아이콘의 글꼴 크기도 조정 */
         }
+
         </style>
     </head>
     <body>
@@ -62,7 +78,7 @@
                             <a class="dropdown-item" href="/Movement_play">메인 화면</a>
                             <a class="dropdown-item" href="/Instrument_choice">악기소리 설정</a>
                             <a class="dropdown-item" href="/Get_AllMovements">모션 사용자 설정</a>
-                            <a class="dropdown-item" href="/Playlist">영상 재생 목록</a>
+                            <a class="dropdown-item" href="/video-playlist">영상 재생 목록</a>
                         </div>
                     </li>
                 </ul>
@@ -70,40 +86,66 @@
         </nav>
 
         <h2 class="page-title">악기 설정</h2>
+
         <div class="instrument-container">
-            <button class="instrument-item" value="0">피아노</button>
-            <button onclick="playPreview(0)">미리듣기</button>
-            <button class="instrument-item" value="1">피리</button>
-            <button onclick="playPreview(1)">미리듣기</button>
-            <button class="instrument-item" value="2">오르간</button>
-            <button onclick="playPreview(2)">미리듣기</button>
-            <button class="instrument-item" value="3">실로폰</button>
-            <button onclick="playPreview(3)">미리듣기</button>
-            <button class="instrument-item" value="4">플루트</button>
-            <button onclick="playPreview(4)">미리듣기</button>
+            <div class="instrument-row">
+                <div class="instrument-set">
+                    <button class="instrument-item" value="0">피아노</button>
+                    <button onclick="playPreview(0)" class="headphone-button">
+                        <i class="fas fa-headphones fa-lg"></i>
+                    </button>
+                </div>
+                <div class="instrument-set">
+                    <button class="instrument-item" value="1" class="headphone-button">피리</button>
+                    <button onclick="playPreview(1)">
+                        <i class="fas fa-headphones fa-lg"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="instrument-row">
+                <div class="instrument-set">
+                    <button class="instrument-item" value="2" class="headphone-button">오르간</button>
+                    <button onclick="playPreview(2)">
+                        <i class="fas fa-headphones fa-lg"></i>
+                    </button>
+                </div>
+                <div class="instrument-set">
+                    <button class="instrument-item" value="3" class="headphone-button">실로폰</button>
+                    <button onclick="playPreview(3)">
+                        <i class="fas fa-headphones fa-lg"></i>
+                    </button>
+                </div>
+                <div class="instrument-set">
+                    <button class="instrument-item" value="4" class="headphone-button">플루트</button>
+                    <button onclick="playPreview(4)">
+                        <i class="fas fa-headphones fa-lg"></i>
+                    </button>
+                </div>
+            </div>
         </div>
         <audio id="audioPlayer"></audio>
         
         <script>
         $(document).ready(function() {
             
-            // 녹화 시작/정지 버튼 이벤트
-            $('.instrument-item').click(function() {
-                var buttonValue = $(this).val();
-                $.ajax({
-                    url: "/Instrument_choice",
-                    type: "POST",
-                    data: {instrument_value: buttonValue},
-                    success: function(response) {
-                        console.log("성공:", response);
-                    },
-                    error: function(error) {
-                        console.log("오류:", error);
-                    }
-                });
+         // 녹화 시작/정지 버튼 이벤트
+         $('.instrument-item').click(function() {
+            var buttonValue = $(this).val();
+            $.ajax({
+                url: "/Instrument_choice",
+                type: "POST",
+                data: {instrument_value: buttonValue},
+                success: function(response) {
+                    console.log("성공:", response);
+                },
+                error: function(error) {
+                    console.log("오류:", error);
+                }
             });
         });
-        async function playPreview(instrumentCode) {
+    });
+
+    async function playPreview(instrumentCode) {
             const response = await fetch(`/api/music_files/${instrumentCode}`);
             const musicFiles = await response.json();
             if (musicFiles.length === 0) {

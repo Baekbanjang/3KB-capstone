@@ -18,6 +18,7 @@ import subprocess
 import time
 import pymongo
 import bson
+import csv
 from gridfs import GridFS
 
 app = Flask(__name__)
@@ -66,9 +67,16 @@ frames = []
 
 play_time = None
 
+image_status = {}
+
 code = {
     '0':'c_low', '1':'d', '2':'e', '3':'f', '4':'g',
     '5':'a', '6':'b', '7':'stop', '8': 'octaveup', '9': 'octavedown'
+}
+
+name_code = {
+    '0':'도', '1':'레', '2':'미', '3':'파', '4':'솔',
+    '5':'라', '6':'시', '7':'정지 신호', '8': '옥타브 업 신호', '9': '옥타브 다운 신호'
 }
 
 mode = {
@@ -117,56 +125,6 @@ pose_sounds = {
     5: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/a.ogg'),
     6: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/b.ogg')
 }
-
-# Gesture 및 Pose 프리셋 설정
-GesturePresets = {
-    '1': [{"id": 0, "name": "도", "description": ".."}, {"id": 1, "name": "레", "description": ".."}, 
-        {"id": 2, "name": "미", "description": ".."}, {"id": 3, "name": "파", "description": ".."}, 
-        {"id": 4, "name": "솔", "description": ".."}, {"id": 5, "name": "라", "description": ".."}, 
-        {"id": 6, "name": "시", "description": ".."}, {"id": 7, "name": "정지 신호", "description": ".."}, 
-        {"id": 8, "name": "옥타브 업 신호", "description": ".."}, {"id": 9, "name": "옥타브 다운 신호", "description": ".."}],
-    '2': [{"id": 0, "name": "도", "description": ".."}, {"id": 1, "name": "레", "description": ".."}, 
-        {"id": 2, "name": "미", "description": ".."}, {"id": 3, "name": "파", "description": ".."}, 
-        {"id": 4, "name": "솔", "description": ".."}, {"id": 5, "name": "라", "description": ".."}, 
-        {"id": 6, "name": "시", "description": ".."}, {"id": 7, "name": "정지 신호", "description": ".."}, 
-        {"id": 8, "name": "옥타브 업 신호", "description": ".."}, {"id": 9, "name": "옥타브 다운 신호", "description": ".."}],
-    '3': [{"id": 0, "name": "도", "description": ".."}, {"id": 1, "name": "레", "description": ".."}, 
-        {"id": 2, "name": "미", "description": ".."}, {"id": 3, "name": "파", "description": ".."}, 
-        {"id": 4, "name": "솔", "description": ".."}, {"id": 5, "name": "라", "description": ".."}, 
-        {"id": 6, "name": "시", "description": ".."}, {"id": 7, "name": "정지 신호", "description": ".."}, 
-        {"id": 8, "name": "옥타브 업 신호", "description": ".."}, {"id": 9, "name": "옥타브 다운 신호", "description": ".."}],
-    '4': [{"id": 0, "name": "도", "description": ".."}, {"id": 1, "name": "레", "description": ".."}, 
-        {"id": 2, "name": "미", "description": ".."}, {"id": 3, "name": "파", "description": ".."}, 
-        {"id": 4, "name": "솔", "description": ".."}, {"id": 5, "name": "라", "description": ".."}, 
-        {"id": 6, "name": "시", "description": ".."}, {"id": 7, "name": "정지 신호", "description": ".."}, 
-        {"id": 8, "name": "옥타브 업 신호", "description": ".."}, {"id": 9, "name": "옥타브 다운 신호", "description": ".."}]
-}
-
-PosePresets = {
-    '1': [{"id": 0, "name": "도", "description": ".."}, {"id": 1, "name": "레", "description": ".."}, 
-        {"id": 2, "name": "미", "description": ".."}, {"id": 3, "name": "파", "description": ".."}, 
-        {"id": 4, "name": "솔", "description": ".."}, {"id": 5, "name": "라", "description": ".."}, 
-        {"id": 6, "name": "시", "description": ".."}, {"id": 7, "name": "정지 신호", "description": ".."}, 
-        {"id": 8, "name": "옥타브 업 신호", "description": ".."}, {"id": 9, "name": "옥타브 다운 신호", "description": ".."}],
-    '2': [{"id": 0, "name": "도", "description": ".."}, {"id": 1, "name": "레", "description": ".."}, 
-        {"id": 2, "name": "미", "description": ".."}, {"id": 3, "name": "파", "description": ".."}, 
-        {"id": 4, "name": "솔", "description": ".."}, {"id": 5, "name": "라", "description": ".."}, 
-        {"id": 6, "name": "시", "description": ".."}, {"id": 7, "name": "정지 신호", "description": ".."}, 
-        {"id": 8, "name": "옥타브 업 신호", "description": ".."}, {"id": 9, "name": "옥타브 다운 신호", "description": ".."}],
-    '3': [{"id": 0, "name": "도", "description": ".."}, {"id": 1, "name": "레", "description": ".."}, 
-        {"id": 2, "name": "미", "description": ".."}, {"id": 3, "name": "파", "description": ".."}, 
-        {"id": 4, "name": "솔", "description": ".."}, {"id": 5, "name": "라", "description": ".."}, 
-        {"id": 6, "name": "시", "description": ".."}, {"id": 7, "name": "정지 신호", "description": ".."}, 
-        {"id": 8, "name": "옥타브 업 신호", "description": ".."}, {"id": 9, "name": "옥타브 다운 신호", "description": ".."}],
-    '4': [{"id": 0, "name": "도", "description": ".."}, {"id": 1, "name": "레", "description": ".."}, 
-        {"id": 2, "name": "미", "description": ".."}, {"id": 3, "name": "파", "description": ".."}, 
-        {"id": 4, "name": "솔", "description": ".."}, {"id": 5, "name": "라", "description": ".."}, 
-        {"id": 6, "name": "시", "description": ".."}, {"id": 7, "name": "정지 신호", "description": ".."}, 
-        {"id": 8, "name": "옥타브 업 신호", "description": ".."}, {"id": 9, "name": "옥타브 다운 신호", "description": ".."}]
-}
-
-FirstGesturePresets = GesturePresets
-FirstPosePresets = PosePresets
 
 # 현재 날짜 및 시간을 포맷에 맞게 가져오기
 current_time = None
@@ -399,6 +357,8 @@ def get_gesture_set():
                 data = np.array([angle], dtype=np.float32)
                 data = np.append(data, gesture_code) #인덱스에 코드 번호 추가
 
+                cv2.imwrite(f'static/capture/gesture/'+ gesture_preset +'/capture_gesture_'+code[gesture_code]+'.jpg', img)
+
                 # 현재 촬영되는 포즈 정보를 화면에 표시
                 cv2.putText(img, f'Current Gesture: {code[gesture_code]}', (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
                 file = np.vstack((file, data.astype(float)))
@@ -461,6 +421,8 @@ def get_pose_set():
             # 각도 데이터와 포즈 코드 번호를 합쳐서 저장
             data = np.append(angles, pose_code)
             file = np.vstack((file, data.astype(float)))
+
+            cv2.imwrite(f'static/capture/pose/'+ pose_preset +'/capture_pose_'+code[pose_code]+'.jpg', img)
             
             # 현재 촬영되는 포즈 정보를 화면에 표시
             cv2.putText(img, f'Current Pose: {code[pose_code]}', (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
@@ -619,7 +581,6 @@ def gesture_gen():
 def gesture_gen_2():
     global gesture_preset, gesture_sounds2, isRecording, out2, height, width, fps
     octave_code=5
-
     current_gesture_preset = gesture_preset
     knn = load_and_train_knn(current_gesture_preset)
 
@@ -684,41 +645,41 @@ def gesture_gen_2():
 
                 # Inference gesture
                 data = np.array([angle], dtype=np.float32)
-                ret2, results, neighbours, dist = knn.findNearest(data, 3)
-                idx = int(results[0][0])
+                if knn is not None :
+                    ret2, results, neighbours, dist = knn.findNearest(data, 3)
+                    idx = int(results[0][0])
 
-                if temp_idx != idx:
-                    if current_channel:
+                    if temp_idx != idx:
+                        if current_channel:
+                            current_channel.stop()
+
+                        channel_number = 8 + (idx % 8)  # 8에서 15까지의 채널 사용
+                        current_channel = pygame.mixer.Channel(channel_number)
+
+                        if current_channel is None:
+                            current_channel = pygame.mixer.Channel(idx + 8)
+
                         current_channel.stop()
 
-                    channel_number = 8 + (idx % 8)  # 8에서 15까지의 채널 사용
-                    current_channel = pygame.mixer.Channel(channel_number)
-
-                    if current_channel is None:
-                        current_channel = pygame.mixer.Channel(idx + 8)
-
-                    current_channel.stop()
-
-                    if idx in gesture_sounds2:
-                        sound = gesture_sounds2[idx]
-                        sound.set_volume(0.3)
-                        current_channel.play(sound)
-                    elif idx ==8:
-                        octave_code += 1
-                        if octave_code > 7:  # 여기서 2는 octave_code의 최대값
-                            octave_code = 7  # 최대값 초과 시 octave_code를 최대값으로 설정
-                        octave_code_str = str(octave_code)
-                        update_gesture_sounds2(octave_code_str)
-                    elif idx ==9:
-                        octave_code -= 1
-                        if octave_code < 1:  # 여기서 2는 octave_code의 최대값
-                            octave_code = 1  # 최대값 초과 시 octave_code를 최대값으로 설정
-                        octave_code_str = str(octave_code)
-                        update_gesture_sounds2(octave_code_str)
-                    elif idx == 13:
-                        pygame.mixer.music.stop()
-                    temp_idx = idx
-
+                        if idx in gesture_sounds2:
+                            sound = gesture_sounds2[idx]
+                            sound.set_volume(0.3)
+                            current_channel.play(sound)
+                        elif idx ==8:
+                            octave_code += 1
+                            if octave_code > 7:  # 여기서 2는 octave_code의 최대값
+                                octave_code = 7  # 최대값 초과 시 octave_code를 최대값으로 설정
+                            octave_code_str = str(octave_code)
+                            update_gesture_sounds2(octave_code_str)
+                        elif idx ==9:
+                            octave_code -= 1
+                            if octave_code < 1:  # 여기서 2는 octave_code의 최대값
+                                octave_code = 1  # 최대값 초과 시 octave_code를 최대값으로 설정
+                            octave_code_str = str(octave_code)
+                            update_gesture_sounds2(octave_code_str)
+                        elif idx == 13:
+                            pygame.mixer.music.stop()
+                        temp_idx = idx
         if isRecording:
             out2.write(img2)
 
@@ -851,25 +812,60 @@ def pose_gen():
         
 @app.route('/Get_AllMovements', methods=['GET', 'POST'])
 def process_movement_data():
-    global gesture_code, gesture_preset, pose_code, pose_preset, isStop, GesturePresets, PosePresets, FirstGesturePresets, FirstPosePresets
+    global gesture_code, gesture_preset, pose_code, pose_preset, isStop, name_code, image_status
+    response_data = {'data': []}
+    for n_code in name_code:
+        image_path = f'static/capture/gesture/{gesture_preset}/capture_gesture_'+code[n_code]+'.jpg'
+        image_status[n_code] = os.path.exists(image_path)
     if request.method == 'POST':        
         mode = request.form.get('mode')
         if (mode == "gesture"):
+            response_data = {'data': []}
+            for n_code in name_code:
+                image_path = f'static/capture/gesture/{gesture_preset}/capture_gesture_'+code[n_code]+'.jpg'
+                image_status[n_code] = os.path.exists(image_path)
+                # 가상의 데이터 생성 예제
+                response_data['data'].append({
+                    'idx': n_code,
+                    'image_status': image_status[n_code],
+                    'image_url': image_path
+                })
             if 'preset' in request.form:
+                image_status = {}
+                response_data = {'data': []}
                 gesture_preset = request.form['preset']
-                return jsonify(GesturePresets[gesture_preset])
+                for n_code in name_code:
+                    image_path = f'static/capture/gesture/{gesture_preset}/capture_gesture_'+code[n_code]+'.jpg'
+                    image_status[n_code] = os.path.exists(image_path)
+                    # 가상의 데이터 생성 예제
+                    response_data['data'].append({
+                        'idx': n_code,
+                        'image_status': image_status[n_code],
+                        'image_url': image_path
+                    })
+                return jsonify(response_data)
                         
             elif 'button_value' in request.form:
                 gesture_code = request.form['button_value']
-                session['button_value_received'] = True  # 세션에 상태 저장
-            
-                return render_template('GetMovementDataSet.html', message="웹캠 작동을 시작합니다.")
+                session['button_value_received'] = True  # 세션에 상태 저장          
+                return jsonify(response_data)
 
             elif 'stop_sign' in request.form and session.get('button_value_received'):
                 isStop = request.form['stop_sign']
                 session['button_value_received'] = False  # 상태 초기화
-                return render_template('GetMovementDataSet.html', message="웹캠 작동을 종료합니다.")
-            
+                image_status = {}
+                response_data = {'data': []}
+                for n_code in name_code:
+                    image_path = f'static/capture/gesture/{gesture_preset}/capture_gesture_'+code[n_code]+'.jpg'
+                    image_status[n_code] = os.path.exists(image_path)
+                    # 가상의 데이터 생성 예제
+                    response_data['data'].append({
+                        'idx': n_code,
+                        'image_status': image_status[n_code],
+                        'image_url': image_path
+                    })
+                return jsonify(response_data)
+
             elif 'delete_button_value' in request.form:
                 gesture_code = request.form['delete_button_value']
                 file_path = 'data/gesture/' + gesture_preset + '/gesture_train_' + code[gesture_code] + '.csv'
@@ -878,24 +874,74 @@ def process_movement_data():
                     os.remove(file_path)
                 except Exception as e:
                     print(f"파일 삭제 중 오류 발생: {e}")
-                return render_template('GetMovementDataSet.html')
+                file_path = 'static/capture/gesture/' + gesture_preset + '/capture_gesture_' + code[gesture_code] + '.jpg'
 
-            return jsonify(GesturePresets[gesture_preset])
+                try:
+                    os.remove(file_path)
+                except Exception as e:
+                    print(f"파일 삭제 중 오류 발생: {e}")
+                image_status = {}
+                response_data = {'data': []}
+                for n_code in name_code:
+                    image_path = f'static/capture/gesture/{gesture_preset}/capture_gesture_'+code[n_code]+'.jpg'
+                    image_status[n_code] = os.path.exists(image_path)
+                    # 가상의 데이터 생성 예제
+                    response_data['data'].append({
+                        'idx': n_code,
+                        'image_status': image_status[n_code],
+                        'image_url': image_path
+                    })
+                return jsonify(response_data)
+            
+            return jsonify(response_data)
             
         if (mode == "pose"):
+            image_status = {}
+            response_data = {'data': []}
+            for n_code in name_code:
+                image_path = f'static/capture/pose/{pose_preset}/capture_pose_'+code[n_code]+'.jpg'
+                image_status[n_code] = os.path.exists(image_path)
+                # 가상의 데이터 생성 예제
+                response_data['data'].append({
+                    'idx': n_code,
+                    'image_status': image_status[n_code],
+                    'image_url': image_path
+                })
             if 'preset' in request.form:
+                image_status = {}
+                response_data = {'data': []}
                 pose_preset = request.form['preset']
-                return jsonify(PosePresets[pose_preset])
+                for n_code in name_code:
+                    image_path = f'static/capture/pose/{pose_preset}/capture_pose_'+code[n_code]+'.jpg'
+                    image_status[n_code] = os.path.exists(image_path)
+                    # 가상의 데이터 생성 예제
+                    response_data['data'].append({
+                        'idx': n_code,
+                        'image_status': image_status[n_code],
+                        'image_url': image_path
+                    })
+                return jsonify(response_data)
 
             elif 'button_value' in request.form:
                 pose_code = request.form['button_value']
                 session['button_value_received'] = True  # 세션에 상태 저장
-                return render_template('GetMovementDataSet.html', message="웹캠 작동을 시작합니다.")
+                return jsonify(response_data)
 
             elif 'stop_sign' in request.form and session.get('button_value_received'):
                 isStop = request.form['stop_sign']
                 session['button_value_received'] = False  # 상태 초기화
-                return render_template('GetMovementDataSet.html', message="웹캠 작동을 종료합니다.")
+                image_status = {}
+                response_data = {'data': []}
+                for n_code in name_code:
+                    image_path = f'static/capture/pose/{pose_preset}/capture_pose_'+code[n_code]+'.jpg'
+                    image_status[n_code] = os.path.exists(image_path)
+                    # 가상의 데이터 생성 예제
+                    response_data['data'].append({
+                        'idx': n_code,
+                        'image_status': image_status[n_code],
+                        'image_url': image_path
+                    })
+                return jsonify(response_data)
             
             elif 'delete_button_value' in request.form:
                 pose_code = request.form['delete_button_value']
@@ -905,40 +951,115 @@ def process_movement_data():
                     os.remove(file_path)
                 except Exception as e:
                     print(f"파일 삭제 중 오류 발생: {e}")
-                return render_template('GetMovementDataSet.html')
+                file_path = 'static/capture/pose/' + pose_preset + '/capture_pose_' + code[pose_code] + '.jpg'
 
-            return jsonify(PosePresets[pose_preset])
-    return render_template('GetMovementDataSet.html', pose_data=GesturePresets[gesture_preset], gesture_preset=gesture_preset, pose_preset=pose_preset)
+                try:
+                    os.remove(file_path)
+                except Exception as e:
+                    print(f"파일 삭제 중 오류 발생: {e}")
+                image_status = {}
+                response_data = {'data': []}
+                for n_code in name_code:
+                    image_path = f'static/capture/pose/{pose_preset}/capture_pose_'+code[n_code]+'.jpg'
+                    image_status[n_code] = os.path.exists(image_path)
+                    # 가상의 데이터 생성 예제
+                    response_data['data'].append({
+                        'idx': n_code,
+                        'image_status': image_status[n_code],
+                        'image_url': image_path
+                    })
+                return jsonify(response_data)
 
-@app.route('/save_pose', methods=['POST'])
-def save_pose():
-    id = request.form.get('id')
-    inputVal = request.form.get('inputVal')
-    
-    id = request.form.get('id')
-    mode = request.form.get('mode')
-    inputVal = request.form.get('inputVal')
-    if (mode == "gesture"):
-        for find_pose_presets in GesturePresets[gesture_preset]:
-            if find_pose_presets['id'] == int(id):
-                find_pose_presets['description'] = inputVal
-                break
-    if(mode == "pose") :
-        for find_pose_presets in PosePresets[pose_preset]:
-            if find_pose_presets['id'] == int(id):
-                find_pose_presets['description'] = inputVal
-                break
-    return render_template('GetMovementDataSet.html')
+            return jsonify(response_data)
+    return render_template('GetMovementDataSet.html', mode="gesture", code=code, image_status=image_status, gesture_preset=gesture_preset, pose_preset=pose_preset, name_codes=name_code)
 
 @app.route('/reset', methods=['POST'])
 def reset():
-    global gesture_preset, pose_preset, GesturePresets, PosePresets, FirstGesturePresets, FirstPosePresets
+    global gesture_preset, pose_preset
+
     gesture_preset = '1'
     pose_preset = '1'
-    GesturePresets = FirstGesturePresets
-    PosePresets = FirstPosePresets
-    print(FirstGesturePresets)
-    return jsonify(GesturePresets[gesture_preset])
+
+    for i in range(1, 5):
+        # 기존에 수집된 데이터셋 초기화
+        gesture_file_path = 'data/gesture/'+ str(i) +'/gesture_train.csv'
+        pose_file_path = 'data/pose/'+ str(i) +'/pose_angle_train.csv'
+        if os.path.exists(gesture_file_path):
+            os.remove(gesture_file_path)
+        if os.path.exists(pose_file_path):
+            os.remove(pose_file_path)
+        for filename in os.listdir('static/capture/gesture/' + str(i)):
+            gesture_file_path = os.path.join('static/capture/gesture/' + str(i), filename)
+            try:
+                if os.path.isfile(gesture_file_path) or os.path.islink(gesture_file_path):
+                    os.unlink(gesture_file_path)  # 파일 또는 링크 삭제
+                print(filename)
+            except Exception as e:
+                return jsonify({'status': 'error', 'message': str(e)})
+        for filename in os.listdir('static/capture/pose/' + str(i)):
+            pose_file_path = os.path.join('static/capture/pose/' + str(i), filename)
+            try:
+                if os.path.isfile(pose_file_path) or os.path.islink(pose_file_path):
+                    os.unlink(pose_file_path)  # 파일 또는 링크 삭제
+            except Exception as e:
+                return jsonify({'status': 'error', 'message': str(e)})    
+        if(i == 1) :
+            for j in range(0, 10) :
+                # 목표 CSV 파일이 없으면 새로 생성
+                if not os.path.exists('data/gesture/'+ str(i) +'/gesture_train_'+ code[str(j)] + '.csv'):
+                    open('data/gesture/'+ str(i) +'/gesture_train_'+ code[str(j)] + '.csv', 'w').close()
+
+                # 원본 CSV 파일 읽기
+                with open('data/gesture/원본/gesture_train_'+ code[str(j)] + '.csv', 'r', newline='', encoding='utf-8') as source_file:
+                    reader = csv.reader(source_file)
+                    data = list(reader)
+        
+                # 목표 CSV 파일에 쓰기
+                with open('data/gesture/'+ str(i) +'/gesture_train_'+ code[str(j)] + '.csv', 'w', newline='', encoding='utf-8') as target_file:
+                    writer = csv.writer(target_file)
+                    writer.writerows(data)
+
+                if not os.path.exists('data/pose/'+ str(i) +'/pose_angle_train_'+ code[str(j)] + '.csv'):
+                    open('data/pose/'+ str(i) +'/pose_angle_train_'+ code[str(j)] + '.csv', 'w').close()
+                    
+                # 원본 CSV 파일 읽기
+                with open('data/pose/원본/pose_angle_train_'+ code[str(j)] + '.csv', 'r', newline='', encoding='utf-8') as source_file:
+                    reader = csv.reader(source_file)
+                    data = list(reader)
+        
+                # 목표 CSV 파일에 쓰기
+                with open('data/pose/'+ str(i) +'/pose_angle_train_'+ code[str(j)] + '.csv', 'w', newline='', encoding='utf-8') as target_file:
+                    writer = csv.writer(target_file)
+                    writer.writerows(data)
+        else :
+            # 디렉터리 내의 모든 파일을 반복
+            for filename in os.listdir('data/gesture/' + str(i)):
+                gesture_file_path = os.path.join('data/gesture/' + str(i), filename)
+                try:
+                    if os.path.isfile(gesture_file_path) or os.path.islink(gesture_file_path):
+                        os.unlink(gesture_file_path)  # 파일 또는 링크 삭제
+                except Exception as e:
+                    return jsonify({'status': 'error', 'message': str(e)})
+            for filename in os.listdir('data/pose/' + str(i)):
+                pose_file_path = os.path.join('data/pose/' + str(i), filename)
+                try:
+                    if os.path.isfile(pose_file_path) or os.path.islink(pose_file_path):
+                        os.unlink(pose_file_path)  # 파일 또는 링크 삭제
+                except Exception as e:
+                    return jsonify({'status': 'error', 'message': str(e)})
+                        # 디렉터리 내의 모든 파일을 반복
+    image_status = {}
+    response_data = {'data': []}
+    for n_code in name_code:
+        image_path = f'static/capture/gesture/1/capture_gesture_'+code[n_code]+'.jpg'
+        image_status[n_code] = os.path.exists(image_path)
+        # 가상의 데이터 생성 예제
+        response_data['data'].append({
+            'idx': n_code,
+            'image_status': image_status[n_code],
+            'image_url': image_path
+        })
+    return jsonify(response_data)
 
 @app.route('/Movement_play', methods=['GET', 'POST'])
 def hand_gestures_play():
