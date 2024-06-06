@@ -1267,8 +1267,8 @@ def get_music_files(instrument_code):
     instrument_dir = instrument.get(instrument_code)
     if not instrument_dir:
         return jsonify([]), 404
-    music_dir = os.path.join('flask_server/instrument', instrument_dir)
-    files = [f for f in os.listdir(music_dir) if f.endswith('.ogg')]
+    music_dir = os.path.join('flask_server/preview_sound', instrument_dir)
+    files = [f for f in os.listdir(music_dir) if f.endswith('.ogg') or f.endswith('.wav')]
     return jsonify(files)
     
 @app.route('/music/<instrument_code>/<filename>')
@@ -1276,7 +1276,7 @@ def serve_music_file(instrument_code, filename):
     instrument_dir = instrument.get(instrument_code)
     if not instrument_dir:
         return '', 404
-    music_dir = os.path.join('flask_server/instrument', instrument_dir)
+    music_dir = os.path.join('preview_sound', instrument_dir)
     return send_from_directory(music_dir, filename)
 
 @app.route('/')
