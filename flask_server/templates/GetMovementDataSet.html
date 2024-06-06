@@ -81,7 +81,7 @@
     </div>
 
     <div class="container mt-3">
-        <table class="table" id="dataTable">
+        <table class="table">
             <thead>
                 <tr>
                     <th>계이름</th>
@@ -97,9 +97,9 @@
                     {% if image_status[idx] == True %}
                     <td>
                         {% if mode == "gesture" %}
-                        <img id="gesture_capture_{{ idx }}" src="{{ url_for('static', filename = '/capture/gesture/' + gesture_preset + '/capture_gesture_'+code[idx]+'.jpg') }}?timestamp={{ timestamp }}" width="320" height="200">
+                        <img id="gesture_capture_{{ idx }}" src="{{ url_for('static', filename = '/capture/gesture/' + gesture_preset + '/capture_gesture_'+code[idx]+'.jpg') }}?timestamp={{ timestamp[idx] }}" width="320" height="200">
                         {% else %}
-                        <img id="pose_capture_{{ idx }}" src="{{ url_for('static', filename = '/capture/pose/' + pose_preset + '/capture_pose_'+code[idx]+'.jpg') }}?timestamp={{ timestamp }}" width="320" height="200">
+                        <img id="pose_capture_{{ idx }}" src="{{ url_for('static', filename = '/capture/pose/' + pose_preset + '/capture_pose_'+code[idx]+'.jpg') }}?timestamp={{ timestamp[idx] }}" width="320" height="200">
                         {% endif %}
                     </td>
                     {% else %}
@@ -299,11 +299,10 @@
             response.data.forEach(function (item) {
                 const row = document.querySelector(`tr[data-idx="${item.idx}"]`);
                 const imgCell = row.querySelector('td:nth-child(2)');
-                const timestamp = new Date().getTime();
                 if (item.image_status) {
                     imgCell.innerHTML = currentMode === 'gesture' ? 
-                        `<img id="gesture_capture_${item.idx}" src="${item.image_url}?timestamp=${timestamp}" width="320" height="200">` : 
-                        `<img id="pose_capture_${item.idx}" src="${item.image_url}?timestamp=${timestamp}" width="320" height="200">`;
+                        `<img id="gesture_capture_${item.idx}" src="${item.image_url}?timestamp=${item.timestamp}" width="320" height="200">` : 
+                        `<img id="pose_capture_${item.idx}" src="${item.image_url}?timestamp=${item.timestamp}" width="320" height="200">`;
                 } else {
                     imgCell.innerHTML = ``;
                 }

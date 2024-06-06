@@ -42,7 +42,7 @@ cap.set(cv2.CAP_PROP_FRAME_WIDTH, width), cap2.set(cv2.CAP_PROP_FRAME_WIDTH, wid
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height), cap2.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 cap.set(cv2.CAP_PROP_FPS, set_fps), cap2.set(cv2.CAP_PROP_FPS, set_fps)
 
-sort_by = 'name'
+sort_by = 'creationDate'
 sort_direction = 'asc'
 
 pygame.init()
@@ -53,7 +53,10 @@ pose_code = None
 isStop = False
 isRecording = None
 instrument_code = '0'
-#octave_code='5'
+instrument_path = None
+min_octave = None
+max_octave = None 
+octave_code = None
 gesture_preset = '1'
 pose_preset = '1'
 
@@ -84,46 +87,72 @@ mode = {
 }
 
 instrument = {
-    '0': "Piano",
-    '1': "Pipe",
-    '2': "Organ",
-    '3': "Xylophone",
-    '4': "Flute"
+    '0': "piano",
+    '1': "pipe",
+    '2': "harmonium",
+    '3': "xylophone",
+    '4': "flute"
 }
 
 octave = {
-    '1':'1','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7'
+    '1': '1', '2': '2', '3': '3', '4': '4', '5': '5', '6': '6', '7': '7'
 }
 
-#악기안에 번호로 숫자 폴더를 만들어 음역 대 구분
+def find_octave_range(instrument_path):
+    """악기 폴더 내에서 최소 및 최대 옥타브 찾기"""
+    octave_names = [name for name in os.listdir(instrument_path) if os.path.isdir(os.path.join(instrument_path, name))]
+    octave_numbers = [int(name) for name in octave_names]
+    min_octave, max_octave = min(octave_numbers), max(octave_numbers)
+    return min_octave, max_octave
+
+def load_sound_file(instrument_path, note):
+    # 파일 확장자 우선 순위 정의
+    file_extensions = ['ogg', 'wav']
+    for ext in file_extensions:
+        # 파일 경로 생성
+        file_path = f'{instrument_path}/{note}.{ext}'
+        # 해당 파일이 존재하는지 확인
+        if os.path.exists(file_path):
+            # 파일이 존재하면 pygame.mixer.Sound 객체 리턴
+            return pygame.mixer.Sound(file_path)
+    # 파일이 어떤 확장자로도 존재하지 않는 경우 None 리턴
+    print(f"File not found: {file_path}")
+    return None
+
+instrument_path = f'flask_server/instrument/{instrument[instrument_code]}'
+min_octave, max_octave = find_octave_range(instrument_path)
+octave_code = min_octave
+instrument_path = f'flask_server/instrument/{instrument[instrument_code]}/{octave_code}'
+
+# 악기안에 번호로 숫자 폴더를 만들어 음역 대 구분
 gesture_sounds1 = {
-    0: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/c.ogg'),
-    1: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/d.ogg'),
-    2: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/e.ogg'),
-    3: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/f.ogg'),
-    4: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/g.ogg'),
-    5: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/a.ogg'),
-    6: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/b.ogg')
+    0: load_sound_file(instrument_path, 'c'),
+    1: load_sound_file(instrument_path, 'd'),
+    2: load_sound_file(instrument_path, 'e'),
+    3: load_sound_file(instrument_path, 'f'),
+    4: load_sound_file(instrument_path, 'g'),
+    5: load_sound_file(instrument_path, 'a'),
+    6: load_sound_file(instrument_path, 'b')
 }
 
 gesture_sounds2 = {
-    0: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/c.ogg'),
-    1: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/d.ogg'),
-    2: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/e.ogg'),
-    3: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/f.ogg'),
-    4: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/g.ogg'),
-    5: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/a.ogg'),
-    6: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/b.ogg')
+    0: load_sound_file(instrument_path, 'c'),
+    1: load_sound_file(instrument_path, 'd'),
+    2: load_sound_file(instrument_path, 'e'),
+    3: load_sound_file(instrument_path, 'f'),
+    4: load_sound_file(instrument_path, 'g'),
+    5: load_sound_file(instrument_path, 'a'),
+    6: load_sound_file(instrument_path, 'b')
 }
 
 pose_sounds = {
-    0: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/c.ogg'),
-    1: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/d.ogg'),
-    2: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/e.ogg'),
-    3: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/f.ogg'),
-    4: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/g.ogg'),
-    5: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/a.ogg'),
-    6: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave['4']+'/b.ogg')
+    0: load_sound_file(instrument_path, 'c'),
+    1: load_sound_file(instrument_path, 'd'),
+    2: load_sound_file(instrument_path, 'e'),
+    3: load_sound_file(instrument_path, 'f'),
+    4: load_sound_file(instrument_path, 'g'),
+    5: load_sound_file(instrument_path, 'a'),
+    6: load_sound_file(instrument_path, 'b')
 }
 
 # 현재 날짜 및 시간을 포맷에 맞게 가져오기
@@ -235,56 +264,57 @@ def merge_audio_video(video_file, audio_file, output_file): # 오디오, 비디�
         print("Error Output:", e.stderr.decode())
 
 # 데이터셋 디렉토리 생성
-data_directory = "data"
+data_directory = "flask_server/data"
 if not os.path.exists(data_directory):
     os.makedirs(data_directory)
 
 # 악기 디렉토리 생성
-instrument_directory = "instrument"
+instrument_directory = "flask_server/instrument"
 if not os.path.exists(instrument_directory):
     os.makedirs(instrument_directory)
 
 # 녹화 디렉토리 생성
-output_directory = "recordings" 
+output_directory = "flask_server/recordings" 
 if not os.path.exists(output_directory):
     os.makedirs(output_directory)
 
-def update_gesture_sounds1(octave_code='4'):
+def update_gesture_sounds1(octave_code):
     global instrument_code, gesture_sounds1
+    instrument_path = f'flask_server/instrument/{instrument[instrument_code]}/{octave_code}'
     gesture_sounds1 = {
-        0: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/c.ogg'),
-        1: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/d.ogg'),
-        2: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/e.ogg'),
-        3: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/f.ogg'),
-        4: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/g.ogg'),
-        5: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/a.ogg'),
-        6: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/b.ogg')
-
+        0: load_sound_file(instrument_path, 'c'),
+        1: load_sound_file(instrument_path, 'd'),
+        2: load_sound_file(instrument_path, 'e'),
+        3: load_sound_file(instrument_path, 'f'),
+        4: load_sound_file(instrument_path, 'g'),
+        5: load_sound_file(instrument_path, 'a'),
+        6: load_sound_file(instrument_path, 'b')
     }
 
 def update_gesture_sounds2(octave_code='4'):
     global instrument_code, gesture_sounds2
+    instrument_path = f'flask_server/instrument/{instrument[instrument_code]}/{octave_code}'
     gesture_sounds2 = {
-        0: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/c.ogg'),
-        1: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/d.ogg'),
-        2: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/e.ogg'),
-        3: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/f.ogg'),
-        4: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/g.ogg'),
-        5: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/a.ogg'),
-        6: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/b.ogg')
-
+        0: load_sound_file(instrument_path, 'c'),
+        1: load_sound_file(instrument_path, 'd'),
+        2: load_sound_file(instrument_path, 'e'),
+        3: load_sound_file(instrument_path, 'f'),
+        4: load_sound_file(instrument_path, 'g'),
+        5: load_sound_file(instrument_path, 'a'),
+        6: load_sound_file(instrument_path, 'b')
     }
 
 def update_pose_sounds(octave_code='4'):
     global instrument_code, pose_sounds
+    instrument_path = f'flask_server/instrument/{instrument[instrument_code]}/{octave_code}'
     pose_sounds = {
-        0: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/c.ogg'),
-        1: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/d.ogg'),
-        2: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/e.ogg'),
-        3: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/f.ogg'),
-        4: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/g.ogg'),
-        5: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/a.ogg'),
-        6: pygame.mixer.Sound('instrument/'+instrument[instrument_code]+'/'+octave[octave_code]+'/b.ogg')
+        0: load_sound_file(instrument_path, 'c'),
+        1: load_sound_file(instrument_path, 'd'),
+        2: load_sound_file(instrument_path, 'e'),
+        3: load_sound_file(instrument_path, 'f'),
+        4: load_sound_file(instrument_path, 'g'),
+        5: load_sound_file(instrument_path, 'a'),
+        6: load_sound_file(instrument_path, 'b')
     }
 
 def calculateAngle(landmark1, landmark2, landmark3):
@@ -306,8 +336,8 @@ def calculateAngle(landmark1, landmark2, landmark3):
 
 def get_gesture_set():
     global gesture_code, gesture_preset
-    if os.path.exists('data/gesture/'+ gesture_preset +'/gesture_train_'+ code[gesture_code] + '.csv') and os.path.getsize('data/gesture/'+ gesture_preset +'/gesture_train_'+ code[gesture_code] + '.csv') > 0:
-        file = np.genfromtxt('data/gesture/'+ gesture_preset +'/gesture_train_'+ code[gesture_code] + '.csv', delimiter=',')
+    if os.path.exists('flask_server/data/gesture/'+ gesture_preset +'/gesture_train_'+ code[gesture_code] + '.csv') and os.path.getsize('flask_server/data/gesture/'+ gesture_preset +'/gesture_train_'+ code[gesture_code] + '.csv') > 0:
+        file = np.genfromtxt('flask_server/data/gesture/'+ gesture_preset +'/gesture_train_'+ code[gesture_code] + '.csv', delimiter=',')
     else:
         file = np.empty((0, 16))
 
@@ -357,13 +387,13 @@ def get_gesture_set():
                 data = np.array([angle], dtype=np.float32)
                 data = np.append(data, gesture_code) #인덱스에 코드 번호 추가
 
-                cv2.imwrite(f'static/capture/gesture/'+ gesture_preset +'/capture_gesture_'+code[gesture_code]+'.jpg', img)
+                cv2.imwrite(f'flask_server/static/capture/gesture/'+ gesture_preset +'/capture_gesture_'+code[gesture_code]+'.jpg', img)
 
                 # 현재 촬영되는 포즈 정보를 화면에 표시
                 cv2.putText(img, f'Current Gesture: {code[gesture_code]}', (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
                 file = np.vstack((file, data.astype(float)))
         if(isStop) :
-            np.savetxt('data/gesture/'+ gesture_preset +'/gesture_train_' + code[gesture_code] + '.csv', file, delimiter=',')
+            np.savetxt('flask_server/data/gesture/'+ gesture_preset +'/gesture_train_' + code[gesture_code] + '.csv', file, delimiter=',')
         ret, jpeg = cv2.imencode('.jpg', img)
         frame = jpeg.tobytes()
         yield (b'--frame\r\n'
@@ -371,19 +401,19 @@ def get_gesture_set():
         
 def get_pose_set():
     global pose_code, pose_preset
-    if os.path.exists('data/pose/'+ pose_preset +'/pose_angle_train_'+ code[pose_code] + '.csv') and os.path.getsize('data/pose/'+ pose_preset +'/pose_angle_train_'+ code[pose_code] + '.csv') > 0:
-        file = np.genfromtxt('data/pose/'+ pose_preset +'/pose_angle_train_'+ code[pose_code] + '.csv', delimiter=',')
+    if os.path.exists('flask_server/data/pose/'+ pose_preset +'/pose_angle_train_'+ code[pose_code] + '.csv') and os.path.getsize('flask_server/data/pose/'+ pose_preset +'/pose_angle_train_'+ code[pose_code] + '.csv') > 0:
+        file = np.genfromtxt('flask_server/data/pose/'+ pose_preset +'/pose_angle_train_'+ code[pose_code] + '.csv', delimiter=',')
     else:
         file = np.empty((0,17))
     # MediaPipe pose 모델 초기화
     mp_pose = mp.solutions.pose
     mp_drawing = mp.solutions.drawing_utils
     pose = mp_pose.Pose(
-    static_image_mode=False, #정적 이미지모드, 비디오 스트림 입력
-    model_complexity=1, # 모델 복잡성 1
-    smooth_landmarks=True, # 부드러운 랜드마크, 솔루션 필터가 지터를 줄이기 위해 다른 입력 이미지에 랜드마크 표시
-    min_detection_confidence=0.5, # 최소 탐지 신뢰값, 기본 0.5
-    min_tracking_confidence=0.5) # 최소 추적 신뢰값 , 기본 0.5
+        static_image_mode=False, #정적 이미지모드, 비디오 스트림 입력
+        model_complexity=1, # 모델 복잡성 1
+        smooth_landmarks=True, # 부드러운 랜드마크, 솔루션 필터가 지터를 줄이기 위해 다른 입력 이미지에 랜드마크 표시
+        min_detection_confidence=0.5, # 최소 탐지 신뢰값, 기본 0.5
+        min_tracking_confidence=0.5) # 최소 추적 신뢰값 , 기본 0.5
 
     while cap.isOpened():
         ret, img = cap.read()
@@ -422,12 +452,12 @@ def get_pose_set():
             data = np.append(angles, pose_code)
             file = np.vstack((file, data.astype(float)))
 
-            cv2.imwrite(f'static/capture/pose/'+ pose_preset +'/capture_pose_'+code[pose_code]+'.jpg', img)
+            cv2.imwrite(f'flask_server/static/capture/pose/'+ pose_preset +'/capture_pose_'+code[pose_code]+'.jpg', img)
             
             # 현재 촬영되는 포즈 정보를 화면에 표시
             cv2.putText(img, f'Current Pose: {code[pose_code]}', (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
         if(isStop) :
-            np.savetxt('data/pose/'+ pose_preset +'/pose_angle_train_' + code[pose_code] + '.csv', file, delimiter=',')
+            np.savetxt('flask_server/data/pose/'+ pose_preset +'/pose_angle_train_' + code[pose_code] + '.csv', file, delimiter=',')
         ret, jpeg = cv2.imencode('.jpg', img)
         frame = jpeg.tobytes()
         yield (b'--frame\r\n'
@@ -437,14 +467,14 @@ def get_pose_set():
 file_lock = threading.Lock()
 
 def load_and_train_knn(preset):
-    file_path = 'data/gesture/' + preset + '/gesture_train.csv'
+    file_path = 'flask_server/data/gesture/' + preset + '/gesture_train.csv'
     
     with file_lock:
         if os.path.exists(file_path):
             os.remove(file_path)
 
         # Collect datasets in the data folder
-        file_list = glob.glob('data/gesture/' + preset + '/' + '*')
+        file_list = glob.glob('flask_server/data/gesture/' + preset + '/' + '*')
         with open(file_path, 'w') as f:  # Open file to merge data
             for file in file_list:
                 with open(file, 'r') as f2:
@@ -471,8 +501,7 @@ def load_and_train_knn(preset):
     return knn
 
 def gesture_gen():
-    global gesture_preset, gesture_sounds1, isRecording, out, height, width, fps
-    octave_code=5
+    global gesture_preset, gesture_sounds1, isRecording, out, height, width, fps, octave_code, min_octave, max_octave
     current_gesture_preset = gesture_preset
     knn = load_and_train_knn(current_gesture_preset)
 
@@ -485,12 +514,12 @@ def gesture_gen():
     mp_hands = mp.solutions.hands
     mp_drawing = mp.solutions.drawing_utils
     hands = mp_hands.Hands(
-    max_num_hands=max_num_hands,
-    min_detection_confidence=0.5,
-    min_tracking_confidence=0.5)
+        max_num_hands=max_num_hands,
+        min_detection_confidence=0.5,
+        min_tracking_confidence=0.5)
 
     temp_idx = None
-    current_channel=None
+    current_channel = None
 
     while cap.isOpened():
         if gesture_preset != current_gesture_preset:
@@ -551,18 +580,21 @@ def gesture_gen():
                         
                         if idx in gesture_sounds1:
                             sound = gesture_sounds1[idx]
-                            sound.set_volume(0.3)
-                            current_channel.play(sound)
+                            if sound is not None:
+                                sound.set_volume(0.3)
+                                current_channel.play(sound)
+                            else:
+                                print(f"Sound for gesture {idx} is not available.")
                         elif idx ==8:
                             octave_code += 1
-                            if octave_code > 7:  # 여기서 2는 octave_code의 최대값
-                                octave_code = 7  # 최대값 초과 시 octave_code를 최대값으로 설정
+                            if octave_code > max_octave:  # 여기서 2는 octave_code의 최대값
+                                octave_code = max_octave  # 최대값 초과 시 octave_code를 최대값으로 설정
                             octave_code_str = str(octave_code)
                             update_gesture_sounds1(octave_code_str)
-                        elif idx ==9:
+                        elif idx == 9:
                             octave_code -= 1
-                            if octave_code < 1:  # 여기서 2는 octave_code의 최대값
-                                octave_code = 1  # 최대값 초과 시 octave_code를 최대값으로 설정
+                            if octave_code < min_octave:  # 여기서 2는 octave_code의 최대값
+                                octave_code = min_octave  # 최대값 초과 시 octave_code를 최대값으로 설정
                             octave_code_str = str(octave_code)
                             update_gesture_sounds1(octave_code_str)
                         elif idx == 13:
@@ -579,7 +611,7 @@ def gesture_gen():
         
 # 웹캠
 def gesture_gen_2():
-    global gesture_preset, gesture_sounds2, isRecording, out2, height, width, fps
+    global gesture_preset, gesture_sounds2, isRecording, out2, height, width, fps, octave_code, min_octave, max_octave
     octave_code=5
     current_gesture_preset = gesture_preset
     knn = load_and_train_knn(current_gesture_preset)
@@ -663,22 +695,28 @@ def gesture_gen_2():
 
                         if idx in gesture_sounds2:
                             sound = gesture_sounds2[idx]
-                            sound.set_volume(0.3)
-                            current_channel.play(sound)
-                        elif idx ==8:
+                            if sound is not None:
+                                sound.set_volume(0.3)
+                                current_channel.play(sound)
+                            else:
+                                print(f"Sound for gesture {idx} is not available.")
+
+                        elif idx == 8:
                             octave_code += 1
-                            if octave_code > 7:  # 여기서 2는 octave_code의 최대값
-                                octave_code = 7  # 최대값 초과 시 octave_code를 최대값으로 설정
+                            if octave_code > max_octave:  # 여기서 2는 octave_code의 최대값
+                                octave_code = max_octave  # 최대값 초과 시 octave_code를 최대값으로 설정
                             octave_code_str = str(octave_code)
                             update_gesture_sounds2(octave_code_str)
-                        elif idx ==9:
+                        elif idx == 9:
                             octave_code -= 1
-                            if octave_code < 1:  # 여기서 2는 octave_code의 최대값
-                                octave_code = 1  # 최대값 초과 시 octave_code를 최대값으로 설정
+                            if octave_code < min_octave:  # 여기서 2는 octave_code의 최대값
+                                octave_code = min_octave  # 최대값 초과 시 octave_code를 최대값으로 설정
                             octave_code_str = str(octave_code)
                             update_gesture_sounds2(octave_code_str)
                         elif idx == 13:
                             pygame.mixer.music.stop()
+                        else:
+                            print(f"{instrument_path}")
                         temp_idx = idx
         if isRecording:
             out2.write(img2)
@@ -693,15 +731,17 @@ def gesture_gen_2():
 
 def pose_gen():
     global pose_preset, pose_sounds, isRecording, out, height, width, fps
-    def pose_load_and_train_knn(preset):        
+    octave_code = 5
+
+    def pose_load_and_train_knn(preset):   
         # 기존에 수집된 데이터셋 초기화
-        file_path = 'data/pose/'+ preset +'/pose_angle_train.csv'
+        file_path = 'flask_server/data/pose/'+ preset +'/pose_angle_train.csv'
         if os.path.exists(file_path):
             os.remove(file_path)
        
         # data 폴더에 있는 데이터셋들 취합
-        file_list = glob.glob('data/pose/'+ preset +'/' + '*')
-        with open('data/pose/'+ preset +'/pose_angle_train.csv', 'w') as f: # 취합할 파일을 열고
+        file_list = glob.glob('flask_server/data/pose/'+ preset +'/' + '*')
+        with open('flask_server/data/pose/'+ preset +'/pose_angle_train.csv', 'w') as f: # 취합할 파일을 열고
             for file in file_list:
                 with open(file ,'r') as f2:
                     while True:
@@ -715,8 +755,8 @@ def pose_gen():
                 file_name = file.split('\\')[-1]
 
         # 포즈 인식 모델 로드
-        if os.path.exists('data/pose/'+ preset +'/pose_angle_train.csv') and os.path.getsize('data/pose/'+ preset +'/pose_angle_train.csv') > 0:
-            file = np.genfromtxt('data/pose/'+ preset +'/pose_angle_train.csv', delimiter=',')
+        if os.path.exists('flask_server/data/pose/'+ preset +'/pose_angle_train.csv') and os.path.getsize('flask_server/data/pose/'+ preset +'/pose_angle_train.csv') > 0:
+            file = np.genfromtxt('flask_server/data/pose/'+ preset +'/pose_angle_train.csv', delimiter=',')
         else:
             file = np.empty((0, 17))
             return None
@@ -735,11 +775,11 @@ def pose_gen():
     mp_pose = mp.solutions.pose
     mp_drawing = mp.solutions.drawing_utils
     pose = mp_pose.Pose(
-    static_image_mode=False, #정적 이미지모드, 비디오 스트림 입력
-    model_complexity=1, # 모델 복잡성 1
-    smooth_landmarks=True, # 부드러운 랜드마크, 솔루션 필터가 지터를 줄이기 위해 다른 입력 이미지에 랜드마크 표시
-    min_detection_confidence=0.5, # 최소 탐지 신뢰값, 기본 0.5
-    min_tracking_confidence=0.5) # 최소 추적 신뢰값 , 기본 0.5
+        static_image_mode=False, #정적 이미지모드, 비디오 스트림 입력
+        model_complexity=1, # 모델 복잡성 1
+        smooth_landmarks=True, # 부드러운 랜드마크, 솔루션 필터가 지터를 줄이기 위해 다른 입력 이미지에 랜드마크 표시
+        min_detection_confidence=0.5, # 최소 탐지 신뢰값, 기본 0.5
+        min_tracking_confidence=0.5) # 최소 추적 신뢰값 , 기본 0.5
 
     frame_count = 0
     start_time = time.time()  # 시작 시간 기록
@@ -798,6 +838,18 @@ def pose_gen():
                         sound = pose_sounds[idx]
                         sound.set_volume(0.3)
                         sound.play()
+                    elif idx == 8:
+                        octave_code += 1
+                        if octave_code > 7:  # 여기서 2는 octave_code의 최대값
+                            octave_code = 7  # 최대값 초과 시 octave_code를 최대값으로 설정
+                        octave_code_str = str(octave_code)
+                        update_pose_sounds(octave_code_str)
+                    elif idx == 9:
+                        octave_code -= 1
+                        if octave_code < 1:  # 여기서 2는 octave_code의 최대값
+                            octave_code = 1  # 최대값 초과 시 octave_code를 최대값으로 설정
+                        octave_code_str = str(octave_code)
+                        update_pose_sounds(octave_code_str)
                     elif idx == 13:
                         if pygame.mixer.music.get_busy():
                             pygame.mixer.music.stop()
@@ -814,34 +866,38 @@ def pose_gen():
 def process_movement_data():
     global gesture_code, gesture_preset, pose_code, pose_preset, isStop, name_code, image_status
     response_data = {'data': []}
+    timestamp = {}
     for n_code in name_code:
-        image_path = f'static/capture/gesture/{gesture_preset}/capture_gesture_'+code[n_code]+'.jpg'
+        image_path = f'flask_server/static/capture/gesture/{gesture_preset}/capture_gesture_'+code[n_code]+'.jpg'
         image_status[n_code] = os.path.exists(image_path)
+        timestamp[n_code] = int(os.path.getmtime(image_path)) if image_status[n_code] else ""
     if request.method == 'POST':        
         mode = request.form.get('mode')
         if (mode == "gesture"):
             response_data = {'data': []}
             for n_code in name_code:
-                image_path = f'static/capture/gesture/{gesture_preset}/capture_gesture_'+code[n_code]+'.jpg'
+                image_path = f'flask_server/static/capture/gesture/{gesture_preset}/capture_gesture_'+code[n_code]+'.jpg'
                 image_status[n_code] = os.path.exists(image_path)
-                # 가상의 데이터 생성 예제
+                timestamp[n_code] = int(os.path.getmtime(image_path)) if image_status[n_code] else ""
                 response_data['data'].append({
                     'idx': n_code,
                     'image_status': image_status[n_code],
-                    'image_url': image_path
+                    'image_url': f"static/capture/gesture/{gesture_preset}/capture_gesture_{code[n_code]}.jpg",
+                    'timestamp': timestamp[n_code]
                 })
             if 'preset' in request.form:
                 image_status = {}
                 response_data = {'data': []}
                 gesture_preset = request.form['preset']
                 for n_code in name_code:
-                    image_path = f'static/capture/gesture/{gesture_preset}/capture_gesture_'+code[n_code]+'.jpg'
+                    image_path = f'flask_server/static/capture/gesture/{gesture_preset}/capture_gesture_'+code[n_code]+'.jpg'
                     image_status[n_code] = os.path.exists(image_path)
-                    # 가상의 데이터 생성 예제
+                    timestamp[n_code] = int(os.path.getmtime(image_path)) if image_status[n_code] else ""
                     response_data['data'].append({
                         'idx': n_code,
                         'image_status': image_status[n_code],
-                        'image_url': image_path
+                        'image_url': f"static/capture/gesture/{gesture_preset}/capture_gesture_{code[n_code]}.jpg",
+                        'timestamp': timestamp[n_code]
                     })
                 return jsonify(response_data)
                         
@@ -856,25 +912,26 @@ def process_movement_data():
                 image_status = {}
                 response_data = {'data': []}
                 for n_code in name_code:
-                    image_path = f'static/capture/gesture/{gesture_preset}/capture_gesture_'+code[n_code]+'.jpg'
+                    image_path = f'flask_server/static/capture/gesture/{gesture_preset}/capture_gesture_'+code[n_code]+'.jpg'
                     image_status[n_code] = os.path.exists(image_path)
-                    # 가상의 데이터 생성 예제
+                    timestamp[n_code] = int(os.path.getmtime(image_path)) if image_status[n_code] else ""
                     response_data['data'].append({
                         'idx': n_code,
                         'image_status': image_status[n_code],
-                        'image_url': image_path
+                        'image_url': f"static/capture/gesture/{gesture_preset}/capture_gesture_{code[n_code]}.jpg",
+                        'timestamp': timestamp[n_code]
                     })
                 return jsonify(response_data)
 
             elif 'delete_button_value' in request.form:
                 gesture_code = request.form['delete_button_value']
-                file_path = 'data/gesture/' + gesture_preset + '/gesture_train_' + code[gesture_code] + '.csv'
+                file_path = 'flask_server/data/gesture/' + gesture_preset + '/gesture_train_' + code[gesture_code] + '.csv'
 
                 try:
                     os.remove(file_path)
                 except Exception as e:
                     print(f"파일 삭제 중 오류 발생: {e}")
-                file_path = 'static/capture/gesture/' + gesture_preset + '/capture_gesture_' + code[gesture_code] + '.jpg'
+                file_path = 'flask_server/static/capture/gesture/' + gesture_preset + '/capture_gesture_' + code[gesture_code] + '.jpg'
 
                 try:
                     os.remove(file_path)
@@ -883,13 +940,14 @@ def process_movement_data():
                 image_status = {}
                 response_data = {'data': []}
                 for n_code in name_code:
-                    image_path = f'static/capture/gesture/{gesture_preset}/capture_gesture_'+code[n_code]+'.jpg'
+                    image_path = f'flask_server/static/capture/gesture/{gesture_preset}/capture_gesture_'+code[n_code]+'.jpg'
                     image_status[n_code] = os.path.exists(image_path)
-                    # 가상의 데이터 생성 예제
+                    timestamp[n_code] = int(os.path.getmtime(image_path)) if image_status[n_code] else ""
                     response_data['data'].append({
                         'idx': n_code,
                         'image_status': image_status[n_code],
-                        'image_url': image_path
+                        'image_url': f"static/capture/gesture/{gesture_preset}/capture_gesture_{code[n_code]}.jpg",
+                        'timestamp': timestamp[n_code]
                     })
                 return jsonify(response_data)
             
@@ -899,26 +957,28 @@ def process_movement_data():
             image_status = {}
             response_data = {'data': []}
             for n_code in name_code:
-                image_path = f'static/capture/pose/{pose_preset}/capture_pose_'+code[n_code]+'.jpg'
+                image_path = f'flask_server/static/capture/pose/{pose_preset}/capture_pose_'+code[n_code]+'.jpg'
                 image_status[n_code] = os.path.exists(image_path)
-                # 가상의 데이터 생성 예제
+                timestamp[n_code] = int(os.path.getmtime(image_path)) if image_status[n_code] else ""
                 response_data['data'].append({
                     'idx': n_code,
                     'image_status': image_status[n_code],
-                    'image_url': image_path
+                    'image_url': f"static/capture/pose/{pose_preset}/capture_pose_{code[n_code]}.jpg",
+                    'timestamp': timestamp[n_code]
                 })
             if 'preset' in request.form:
                 image_status = {}
                 response_data = {'data': []}
                 pose_preset = request.form['preset']
                 for n_code in name_code:
-                    image_path = f'static/capture/pose/{pose_preset}/capture_pose_'+code[n_code]+'.jpg'
+                    image_path = f'flask_server/static/capture/pose/{pose_preset}/capture_pose_'+code[n_code]+'.jpg'
                     image_status[n_code] = os.path.exists(image_path)
-                    # 가상의 데이터 생성 예제
+                    timestamp[n_code] = int(os.path.getmtime(image_path)) if image_status[n_code] else ""
                     response_data['data'].append({
                         'idx': n_code,
                         'image_status': image_status[n_code],
-                        'image_url': image_path
+                        'image_url': f"static/capture/pose/{pose_preset}/capture_pose_{code[n_code]}.jpg",
+                        'timestamp': timestamp[n_code]
                     })
                 return jsonify(response_data)
 
@@ -933,25 +993,25 @@ def process_movement_data():
                 image_status = {}
                 response_data = {'data': []}
                 for n_code in name_code:
-                    image_path = f'static/capture/pose/{pose_preset}/capture_pose_'+code[n_code]+'.jpg'
+                    image_path = f'flask_server/static/capture/pose/{pose_preset}/capture_pose_'+code[n_code]+'.jpg'
                     image_status[n_code] = os.path.exists(image_path)
-                    # 가상의 데이터 생성 예제
+                    timestamp[n_code] = int(os.path.getmtime(image_path)) if image_status[n_code] else ""
                     response_data['data'].append({
                         'idx': n_code,
                         'image_status': image_status[n_code],
-                        'image_url': image_path
+                        'image_url': f"static/capture/pose/{pose_preset}/capture_pose_{code[n_code]}.jpg",
+                        'timestamp': timestamp[n_code]
                     })
                 return jsonify(response_data)
             
             elif 'delete_button_value' in request.form:
                 pose_code = request.form['delete_button_value']
-                file_path = 'data/pose/' + pose_preset + '/pose_angle_train_' + code[pose_code] + '.csv'
-                print(file_path)
+                file_path = 'flask_server/data/pose/' + pose_preset + '/pose_angle_train_' + code[pose_code] + '.csv'
                 try:
                     os.remove(file_path)
                 except Exception as e:
                     print(f"파일 삭제 중 오류 발생: {e}")
-                file_path = 'static/capture/pose/' + pose_preset + '/capture_pose_' + code[pose_code] + '.jpg'
+                file_path = 'flask_server/static/capture/pose/' + pose_preset + '/capture_pose_' + code[pose_code] + '.jpg'
 
                 try:
                     os.remove(file_path)
@@ -960,18 +1020,19 @@ def process_movement_data():
                 image_status = {}
                 response_data = {'data': []}
                 for n_code in name_code:
-                    image_path = f'static/capture/pose/{pose_preset}/capture_pose_'+code[n_code]+'.jpg'
+                    image_path = f'flask_server/static/capture/pose/{pose_preset}/capture_pose_'+code[n_code]+'.jpg'
                     image_status[n_code] = os.path.exists(image_path)
-                    # 가상의 데이터 생성 예제
+                    timestamp[n_code] = int(os.path.getmtime(image_path)) if image_status[n_code] else ""
                     response_data['data'].append({
                         'idx': n_code,
                         'image_status': image_status[n_code],
-                        'image_url': image_path
+                        'image_url': f"static/capture/pose/{pose_preset}/capture_pose_{code[n_code]}.jpg",
+                        'timestamp': timestamp[n_code]
                     })
                 return jsonify(response_data)
 
             return jsonify(response_data)
-    return render_template('GetMovementDataSet.html', mode="gesture", code=code, image_status=image_status, gesture_preset=gesture_preset, pose_preset=pose_preset, name_codes=name_code)
+    return render_template('GetMovementDataSet.html',timestamp=timestamp, mode="gesture", code=code, image_status=image_status, gesture_preset=gesture_preset, pose_preset=pose_preset, name_codes=name_code)
 
 @app.route('/reset', methods=['POST'])
 def reset():
@@ -982,22 +1043,21 @@ def reset():
 
     for i in range(1, 5):
         # 기존에 수집된 데이터셋 초기화
-        gesture_file_path = 'data/gesture/'+ str(i) +'/gesture_train.csv'
-        pose_file_path = 'data/pose/'+ str(i) +'/pose_angle_train.csv'
+        gesture_file_path = 'flask_server/data/gesture/'+ str(i) +'/gesture_train.csv'
+        pose_file_path = 'flask_server/data/pose/'+ str(i) +'/pose_angle_train.csv'
         if os.path.exists(gesture_file_path):
             os.remove(gesture_file_path)
         if os.path.exists(pose_file_path):
             os.remove(pose_file_path)
-        for filename in os.listdir('static/capture/gesture/' + str(i)):
-            gesture_file_path = os.path.join('static/capture/gesture/' + str(i), filename)
+        for filename in os.listdir('flask_server/static/capture/gesture/' + str(i)):
+            gesture_file_path = os.path.join('flask_server/static/capture/gesture/' + str(i), filename)
             try:
                 if os.path.isfile(gesture_file_path) or os.path.islink(gesture_file_path):
                     os.unlink(gesture_file_path)  # 파일 또는 링크 삭제
-                print(filename)
             except Exception as e:
                 return jsonify({'status': 'error', 'message': str(e)})
-        for filename in os.listdir('static/capture/pose/' + str(i)):
-            pose_file_path = os.path.join('static/capture/pose/' + str(i), filename)
+        for filename in os.listdir('flask_server/static/capture/pose/' + str(i)):
+            pose_file_path = os.path.join('flask_server/static/capture/pose/' + str(i), filename)
             try:
                 if os.path.isfile(pose_file_path) or os.path.islink(pose_file_path):
                     os.unlink(pose_file_path)  # 파일 또는 링크 삭제
@@ -1006,42 +1066,42 @@ def reset():
         if(i == 1) :
             for j in range(0, 10) :
                 # 목표 CSV 파일이 없으면 새로 생성
-                if not os.path.exists('data/gesture/'+ str(i) +'/gesture_train_'+ code[str(j)] + '.csv'):
-                    open('data/gesture/'+ str(i) +'/gesture_train_'+ code[str(j)] + '.csv', 'w').close()
+                if not os.path.exists('flask_server/data/gesture/'+ str(i) +'/gesture_train_'+ code[str(j)] + '.csv'):
+                    open('flask_server/data/gesture/'+ str(i) +'/gesture_train_'+ code[str(j)] + '.csv', 'w').close()
 
                 # 원본 CSV 파일 읽기
-                with open('data/gesture/원본/gesture_train_'+ code[str(j)] + '.csv', 'r', newline='', encoding='utf-8') as source_file:
+                with open('flask_server/data/gesture/원본/gesture_train_'+ code[str(j)] + '.csv', 'r', newline='', encoding='utf-8') as source_file:
                     reader = csv.reader(source_file)
                     data = list(reader)
         
                 # 목표 CSV 파일에 쓰기
-                with open('data/gesture/'+ str(i) +'/gesture_train_'+ code[str(j)] + '.csv', 'w', newline='', encoding='utf-8') as target_file:
+                with open('flask_server/data/gesture/'+ str(i) +'/gesture_train_'+ code[str(j)] + '.csv', 'w', newline='', encoding='utf-8') as target_file:
                     writer = csv.writer(target_file)
                     writer.writerows(data)
 
-                if not os.path.exists('data/pose/'+ str(i) +'/pose_angle_train_'+ code[str(j)] + '.csv'):
-                    open('data/pose/'+ str(i) +'/pose_angle_train_'+ code[str(j)] + '.csv', 'w').close()
+                if not os.path.exists('flask_server/data/pose/'+ str(i) +'/pose_angle_train_'+ code[str(j)] + '.csv'):
+                    open('flask_server/data/pose/'+ str(i) +'/pose_angle_train_'+ code[str(j)] + '.csv', 'w').close()
                     
                 # 원본 CSV 파일 읽기
-                with open('data/pose/원본/pose_angle_train_'+ code[str(j)] + '.csv', 'r', newline='', encoding='utf-8') as source_file:
+                with open('flask_server/data/pose/원본/pose_angle_train_'+ code[str(j)] + '.csv', 'r', newline='', encoding='utf-8') as source_file:
                     reader = csv.reader(source_file)
                     data = list(reader)
         
                 # 목표 CSV 파일에 쓰기
-                with open('data/pose/'+ str(i) +'/pose_angle_train_'+ code[str(j)] + '.csv', 'w', newline='', encoding='utf-8') as target_file:
+                with open('flask_server/data/pose/'+ str(i) +'/pose_angle_train_'+ code[str(j)] + '.csv', 'w', newline='', encoding='utf-8') as target_file:
                     writer = csv.writer(target_file)
                     writer.writerows(data)
         else :
             # 디렉터리 내의 모든 파일을 반복
-            for filename in os.listdir('data/gesture/' + str(i)):
-                gesture_file_path = os.path.join('data/gesture/' + str(i), filename)
+            for filename in os.listdir('flask_server/data/gesture/' + str(i)):
+                gesture_file_path = os.path.join('flask_server/data/gesture/' + str(i), filename)
                 try:
                     if os.path.isfile(gesture_file_path) or os.path.islink(gesture_file_path):
                         os.unlink(gesture_file_path)  # 파일 또는 링크 삭제
                 except Exception as e:
                     return jsonify({'status': 'error', 'message': str(e)})
-            for filename in os.listdir('data/pose/' + str(i)):
-                pose_file_path = os.path.join('data/pose/' + str(i), filename)
+            for filename in os.listdir('flask_server/data/pose/' + str(i)):
+                pose_file_path = os.path.join('flask_server/data/pose/' + str(i), filename)
                 try:
                     if os.path.isfile(pose_file_path) or os.path.islink(pose_file_path):
                         os.unlink(pose_file_path)  # 파일 또는 링크 삭제
@@ -1051,7 +1111,7 @@ def reset():
     image_status = {}
     response_data = {'data': []}
     for n_code in name_code:
-        image_path = f'static/capture/gesture/1/capture_gesture_'+code[n_code]+'.jpg'
+        image_path = f'flask_server/static/capture/gesture/1/capture_gesture_'+code[n_code]+'.jpg'
         image_status[n_code] = os.path.exists(image_path)
         # 가상의 데이터 생성 예제
         response_data['data'].append({
@@ -1111,21 +1171,22 @@ def hand_gestures_play():
 
 @app.route('/Instrument_choice', methods=['GET', 'POST'])
 def instrument_choice():
-    global instrument_code
+    global instrument_code, instrument_path, min_octave, max_octave, octave_code
     if request.method == 'POST':
         if 'instrument_value' in request.form:
             instrument_code = request.form['instrument_value']
-            update_gesture_sounds1()
-            update_gesture_sounds2()
-            update_pose_sounds()
+            instrument_path = f'flask_server/instrument/{instrument[instrument_code]}'
+            min_octave, max_octave = find_octave_range(instrument_path)
+            octave_code = min_octave
+            update_gesture_sounds1(octave_code)
+            update_gesture_sounds2(octave_code)
+            update_pose_sounds(octave_code)
             return render_template('instrumentChoice.html', message="악기 변경")
     return render_template('instrumentChoice.html')
 
 @app.route('/Playlist')   
 def playlist():
     global sort_by, sort_direction
-    sort_by = 'creationDate'
-    sort_direction = 'asc'
     # MongoDB에서 영상 리스트 가져오기
     videolist = list(fs.find())  # GridFS에서 모든 파일을 조회
     return render_template('Playlist.html', videos=videolist, sort_by=sort_by, sort_direction=sort_direction)
@@ -1164,7 +1225,7 @@ def rename(video_id):
 @app.route('/Playlist/delete_selected', methods=['POST'])
 def delete_selected():
     video_ids = request.form.getlist('video_ids')
-    sort_by = request.form.get('sort_by', 'name')
+    sort_by = request.form.get('sort_by', 'creationDate')
     sort_direction = request.form.get('sort_direction', 'asc')
     for video_id in video_ids:
         fs.delete(ObjectId(video_id))
@@ -1206,7 +1267,7 @@ def get_music_files(instrument_code):
     instrument_dir = instrument.get(instrument_code)
     if not instrument_dir:
         return jsonify([]), 404
-    music_dir = os.path.join('instrument', instrument_dir)
+    music_dir = os.path.join('flask_server/instrument', instrument_dir)
     files = [f for f in os.listdir(music_dir) if f.endswith('.ogg')]
     return jsonify(files)
     
@@ -1215,7 +1276,7 @@ def serve_music_file(instrument_code, filename):
     instrument_dir = instrument.get(instrument_code)
     if not instrument_dir:
         return '', 404
-    music_dir = os.path.join('instrument', instrument_dir)
+    music_dir = os.path.join('flask_server/instrument', instrument_dir)
     return send_from_directory(music_dir, filename)
 
 @app.route('/')
