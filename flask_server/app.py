@@ -279,7 +279,7 @@ output_directory = "flask_server/recordings"
 if not os.path.exists(output_directory):
     os.makedirs(output_directory)
 
-def update_gesture_sounds1(octave_code):
+def update_gesture_sounds1(octave_code='4'):
     global instrument_code, gesture_sounds1
     instrument_path = f'flask_server/instrument/{instrument[instrument_code]}/{octave_code}'
     gesture_sounds1 = {
@@ -1076,7 +1076,7 @@ def reset():
                         img.save('flask_server/static/capture/gesture/1/capture_gesture_'+ code[str(j)] + '.jpg')
 
                 if not os.path.exists('flask_server/static/capture/pose/'+ str(i) +'/capture_pose_'+ code[str(j)] + '.jpg'):
-                    open('flask_server/static/capture/pose/'+ str(i) +'/capture_pose_'+ code[str(j)] + '.csv', 'w').close()
+                    open('flask_server/static/capture/pose/'+ str(i) +'/capture_pose_'+ code[str(j)] + '.jpg', 'w').close()
                     
                 # 원본 JPG 파일 복사
                 if os.path.exists('flask_server/static/capture/pose/'+ str(i) +'/capture_pose_'+ code[str(j)] + '.jpg'):
@@ -1231,9 +1231,14 @@ def rename(video_id):
 
 @app.route('/Playlist/delete_selected', methods=['POST'])
 def delete_selected():
-    video_ids = request.form.getlist('video_ids')
+    video_ids_raw = request.form.getlist('video_ids')
     sort_by = request.form.get('sort_by', 'creationDate')
     sort_direction = request.form.get('sort_direction', 'asc')
+
+    video_ids = []
+    for video_id in video_ids_raw:
+        video_ids.extend(video_id.split(','))
+    
     for video_id in video_ids:
         fs.delete(ObjectId(video_id))
     return redirect(url_for('list_videos', sort_by=sort_by, sort_direction=sort_direction))
