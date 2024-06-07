@@ -2,6 +2,7 @@ from flask import Flask, render_template, Response, request, session, jsonify, s
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from moviepy.editor import VideoFileClip #재생 시간 확인 용도
+from PIL import Image
 import cv2
 import mediapipe as mp
 import numpy as np
@@ -1049,20 +1050,6 @@ def reset():
             os.remove(gesture_file_path)
         if os.path.exists(pose_file_path):
             os.remove(pose_file_path)
-        for filename in os.listdir('flask_server/static/capture/gesture/' + str(i)):
-            gesture_file_path = os.path.join('flask_server/static/capture/gesture/' + str(i), filename)
-            try:
-                if os.path.isfile(gesture_file_path) or os.path.islink(gesture_file_path):
-                    os.unlink(gesture_file_path)  # 파일 또는 링크 삭제
-            except Exception as e:
-                return jsonify({'status': 'error', 'message': str(e)})
-        for filename in os.listdir('flask_server/static/capture/pose/' + str(i)):
-            pose_file_path = os.path.join('flask_server/static/capture/pose/' + str(i), filename)
-            try:
-                if os.path.isfile(pose_file_path) or os.path.islink(pose_file_path):
-                    os.unlink(pose_file_path)  # 파일 또는 링크 삭제
-            except Exception as e:
-                return jsonify({'status': 'error', 'message': str(e)})    
         if(i == 1) :
             for j in range(0, 10) :
                 # 목표 CSV 파일이 없으면 새로 생성
@@ -1079,18 +1066,22 @@ def reset():
                     writer = csv.writer(target_file)
                     writer.writerows(data)
 
-                if not os.path.exists('flask_server/data/pose/'+ str(i) +'/pose_angle_train_'+ code[str(j)] + '.csv'):
-                    open('flask_server/data/pose/'+ str(i) +'/pose_angle_train_'+ code[str(j)] + '.csv', 'w').close()
+                # 목표 JPG 파일이 없으면 새로 생성
+                if not os.path.exists('flask_server/static/capture/gesture/'+ str(i) +'/capture_gesture_'+ code[str(j)] + '.jpg'):
+                    open('flask_server/static/capture/gesture/'+ str(i) +'/capture_gesture_'+ code[str(j)] + '.jpg', 'w').close()
+
+                # 원본 JPG 파일 복사
+                if os.path.exists('flask_server/static/capture/gesture/'+ str(i) +'/capture_gesture_'+ code[str(j)] + '.jpg'):
+                    with Image.open('flask_server/static/capture/gesture/원본/capture_gesture_'+ code[str(j)] + '.jpg') as img:
+                        img.save('flask_server/static/capture/gesture/1/capture_gesture_'+ code[str(j)] + '.jpg')
+
+                if not os.path.exists('flask_server/static/capture/pose/'+ str(i) +'/capture_pose_'+ code[str(j)] + '.jpg'):
+                    open('flask_server/static/capture/pose/'+ str(i) +'/capture_pose_'+ code[str(j)] + '.csv', 'w').close()
                     
-                # 원본 CSV 파일 읽기
-                with open('flask_server/data/pose/원본/pose_angle_train_'+ code[str(j)] + '.csv', 'r', newline='', encoding='utf-8') as source_file:
-                    reader = csv.reader(source_file)
-                    data = list(reader)
-        
-                # 목표 CSV 파일에 쓰기
-                with open('flask_server/data/pose/'+ str(i) +'/pose_angle_train_'+ code[str(j)] + '.csv', 'w', newline='', encoding='utf-8') as target_file:
-                    writer = csv.writer(target_file)
-                    writer.writerows(data)
+                # 원본 JPG 파일 복사
+                if os.path.exists('flask_server/static/capture/pose/'+ str(i) +'/capture_pose_'+ code[str(j)] + '.jpg'):
+                    with Image.open('flask_server/static/capture/pose/원본/capture_pose_'+ code[str(j)] + '.jpg') as img:
+                        img.save('flask_server/static/capture/pose/1/capture_pose_'+ code[str(j)] + '.jpg')
         else :
             # 디렉터리 내의 모든 파일을 반복
             for filename in os.listdir('flask_server/data/gesture/' + str(i)):
@@ -1107,17 +1098,33 @@ def reset():
                         os.unlink(pose_file_path)  # 파일 또는 링크 삭제
                 except Exception as e:
                     return jsonify({'status': 'error', 'message': str(e)})
-                        # 디렉터리 내의 모든 파일을 반복
+            for filename in os.listdir('flask_server/static/capture/gesture/' + str(i)):
+                gesture_file_path = os.path.join('flask_server/static/capture/gesture/' + str(i), filename)
+                try:
+                    if os.path.isfile(gesture_file_path) or os.path.islink(gesture_file_path):
+                        os.unlink(gesture_file_path)  # 파일 또는 링크 삭제
+                except Exception as e:
+                    return jsonify({'status': 'error', 'message': str(e)})
+            for filename in os.listdir('flask_server/static/capture/pose/' + str(i)):
+                pose_file_path = os.path.join('flask_server/static/capture/pose/' + str(i), filename)
+                try:
+                    if os.path.isfile(pose_file_path) or os.path.islink(pose_file_path):
+                        os.unlink(pose_file_path)  # 파일 또는 링크 삭제
+                except Exception as e:
+                    return jsonify({'status': 'error', 'message': str(e)})    
     image_status = {}
     response_data = {'data': []}
+    timestamp = {}
     for n_code in name_code:
         image_path = f'flask_server/static/capture/gesture/1/capture_gesture_'+code[n_code]+'.jpg'
         image_status[n_code] = os.path.exists(image_path)
         # 가상의 데이터 생성 예제
+        timestamp[n_code] = int(os.path.getmtime(image_path)) if image_status[n_code] else ""
         response_data['data'].append({
             'idx': n_code,
             'image_status': image_status[n_code],
-            'image_url': image_path
+            'image_url': f"static/capture/gesture/1/capture_gesture_{code[n_code]}.jpg",
+            'timestamp': timestamp[n_code]
         })
     return jsonify(response_data)
 

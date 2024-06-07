@@ -34,6 +34,24 @@
             max-width: 640px;
             background-color: white; /* 배경색 설정, 필요에 따라 변경 가능 */
         }
+        .description-box {
+            display: none; /* 처음에는 숨겨져 있음 */
+            width: 720px; /* 박스의 너비 */
+            border: 1px solid #000; /* 테두리 */
+            padding: 10px; /* 내부 여백 */
+            margin-top: 5px; /* 버튼과의 거리 */
+            background-color: #f9f9f9; /* 배경색 */
+            position: absolute; /* 절대 위치 */
+        }
+
+        .help-btn {
+            padding: -2px 3px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            display: inline-block;
+            vertical-align: middle;
+        }
     </style>
 </head>
 <body data-gesture-preset="{{ gesture_preset }}" data-pose-preset="{{ pose_preset }}" current-mode="{{ mode }}">
@@ -78,6 +96,13 @@
         <button class="btn btn-primary PresetButton" value=3>3</button>
         <button class="btn btn-primary PresetButton" value=4>4</button>
         <button class="btn btn-secondary" id="resetButton">초기화</button>
+        <button class="help-btn">?</button>
+        <div class="description-box"><Strong>이 화면에서는 사용자가 원하는 동작을 설정할 수 있는 화면이에요.<br>
+            <br>· 1234: 번호마다 원하는 몸동작, 손동작을 넣을 수 있어요.
+            <br>· 초기화: 이 버튼을 누르면 처음 설정으로 돌아가요.
+            <br>· 손동작 모드/ 몸동작 모드: 이 버튼은 손동작과 몸동작을 선택할 수 있어요.
+            <br>· 녹화하기/삭제하기: 동작마다 소리를 다르게 저장할 수 있어요/ 원래 있던 동작을 없앨 수 있어요.</Strong>
+        </div>
     </div>
 
     <div class="container mt-3">
@@ -387,6 +412,22 @@
             // 모든 버튼 영역을 숨깁니다.
             $('[id^="myDiv"]').hide().removeClass('fixedStreaming');
         }
+
+        $(document).ready(function() {
+            $(".help-btn").click(function() {
+                // 현재 클릭한 버튼에 해당하는 설명 박스만 찾아서 처리
+                var $descriptionBox = $(this).next(".description-box");
+
+                // 버튼의 위치와 크기를 가져옴
+                var offset = $(this).offset();
+                var height = $(this).outerHeight();
+
+                $descriptionBox.css({
+                    top: offset.top + height + "px", // "px" 단위 추가
+                    left: offset.left + "px" // "px" 단위 추가
+                }).toggle();
+            });
+        })
     </script>
 </body>
 </html>
