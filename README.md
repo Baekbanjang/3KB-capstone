@@ -27,7 +27,7 @@
 - **MAIN LIBRARY** : OpenCV, MediaPipe
 
 ## 📝 프로젝트 아키텍쳐
-![프로젝트 시스템 아키텍쳐](https://github.com/Baekbanjang/3KB-capstone/main/gesture_sound_system architecture.png)
+![프로젝트 시스템 아키텍쳐](https://github.com/Baekbanjang/3KB-capstone/main/gesture_sound_system_architecture.png)
 
 ## 📌 주요 기능
 - **모드 선택**
