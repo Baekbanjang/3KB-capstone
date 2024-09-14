@@ -1,6 +1,6 @@
 # 팀 3KB
 
-## 👨‍🏫프로젝트 소개
+## 👨‍🏫프로젝트 소개(Gestrure Sound)
 악기를 배우기 전 어린이들한테 다양한 음악적 경험을 통해 음악에 대한 관심과 즐거움을 일깨워 주는데 중심이 되며 손의 제스처와 몸 동작을 통해 다양한 악기의 연주가 가능한 프로젝트
 
 ## ⏲️ 개발 기간 
@@ -27,7 +27,7 @@
 - **MAIN LIBRARY** : OpenCV, MediaPipe
 
 ## 📝 프로젝트 아키텍쳐
-![프로젝트 시스템 아키텍쳐](https://github.com/Baekbanjang/3KB-capstone/main/gesture_sound_system_architecture.png)
+![프로젝트 시스템 아키텍쳐](https://github.com/Baekbanjang/3KB-capstone/blob/main/gesture_sound_system_architecture.png)
 
 ## 📌 주요 기능
 - **모드 선택**
