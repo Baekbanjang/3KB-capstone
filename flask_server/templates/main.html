@@ -246,7 +246,7 @@
 
                 currentMode = 'gesture'; // 제스처 모드 선택 시
 
-                document.getElementById('video_movement').src = "{{ url_for('processed_video_gesture') }}";
+                document.getElementById('video_movement').src = "{{ url_for('movement.processed_video_gesture') }}";
                 updateButtonColors(gesturePreset);
             });
 
@@ -259,7 +259,7 @@
 
                 currentMode = 'pose'; // 제스처 모드 선택 시
 
-                document.getElementById('video_movement').src = "{{ url_for('processed_video_pose') }}";
+                document.getElementById('video_movement').src = "{{ url_for('movement.processed_video_pose') }}";
                 updateButtonColors(posePreset);
             });
         });

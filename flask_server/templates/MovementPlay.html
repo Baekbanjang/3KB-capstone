@@ -178,6 +178,10 @@
             font-weight: bold;
         }
 
+        #video {
+            width: 640px;
+            height: 480px;
+        }
     </style>
 </head>
 
@@ -345,11 +349,11 @@
 
                 currentMode = 'gesture'; // 제스처 모드 선택 시
 
-                document.getElementById('video_movement').src = "{{ url_for('processed_video_gesture') }}";
+                document.getElementById('video_movement').src = "{{ url_for('movement.processed_video_gesture') }}";
                 updateButtonColors(gesturePreset);
 
-                $('#video_movement').attr('src', "{{ url_for('processed_video_gesture') }}");
-                $('#video_movement2').attr('src', "{{ url_for('processed_video_gesture_2') }}");
+                $('#video_movement').attr('src', "{{ url_for('movement.processed_video_gesture') }}");
+                $('#video_movement2').attr('src', "{{ url_for('movement.processed_video_gesture_2') }}");
                 $('#video_movement2').show()
             });
 
@@ -362,10 +366,10 @@
 
                 currentMode = 'pose'; // 제스처 모드 선택 시
 
-                document.getElementById('video_movement').src = "{{ url_for('processed_video_pose') }}";
+                document.getElementById('video_movement').src = "{{ url_for('movement.processed_video_pose') }}";
                 updateButtonColors(posePreset);
 
-                $('#video_movement').attr('src', "{{ url_for('processed_video_pose') }}");
+                $('#video_movement').attr('src', "{{ url_for('movement.processed_video_pose') }}");
                 $("#video_movement2").attr('src',"");
                 $('#video_movement2').hide()
             });
@@ -424,8 +428,8 @@
             // 페이지 로딩 시 자동으로 화면 띄우기
             $('#myDiv').show();
             $('#myDiv2').show();
-            $('#video_movement').attr('src', "{{ url_for('processed_video_gesture') }}");
-            $('#video_movement2').attr('src', "{{ url_for('processed_video_gesture_2') }}");
+            $('#video_movement').attr('src', "{{ url_for('movement.processed_video_gesture') }}");
+            $('#video_movement2').attr('src', "{{ url_for('movement.processed_video_gesture_2') }}");
 
             // jQuery를 사용하여 이벤트 핸들러 설정
             $(".help-btn").click(function() {
