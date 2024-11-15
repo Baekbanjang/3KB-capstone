@@ -63,8 +63,8 @@ def update_current_time():
     set_global_var('current_time', current_time)
     set_global_var('date_time', date_time)
 
-cap = cv2.VideoCapture(0, cv2.CAP_MSMF)
-cap2 = cv2.VideoCapture(1, cv2.CAP_MSMF)
+cap = cv2.VideoCapture(1, cv2.CAP_MSMF)
+cap2 = cv2.VideoCapture(2, cv2.CAP_MSMF)
 
 # 해상도 설정
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640), cap2.set(cv2.CAP_PROP_FRAME_WIDTH, 640) 
